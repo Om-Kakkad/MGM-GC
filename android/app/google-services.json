@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "377604933549",
+    "project_id": "mgm-golf",
+    "storage_bucket": "mgm-golf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:377604933549:android:029ecaddb0a6b12a080324",
+        "android_client_info": {
+          "package_name": "org.mgmsportsclub.mgm_gc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbABL6UF5Sf6b_Tqfw3KeNVP-JfMGRF8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
