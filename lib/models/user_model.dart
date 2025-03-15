@@ -1,35 +1,74 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
   final String uid;
   final String email;
-  final String? displayName;
-  final String firstName;
-  final String lastName;
-  final DateTime dateOfBirth;
-  final String gender;
-  final String phoneNumber;
+  final String role;
+  final String? firstName;
+  final String? lastName;
+  final DateTime? dateOfBirth;
+  final String? gender;
+  final String? phoneNumber;
   final GolfDetails golfDetails;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   UserModel({
     required this.uid,
     required this.email,
-    this.displayName,
-    required this.firstName,
-    required this.lastName,
-    required this.dateOfBirth,
-    required this.gender,
-    required this.phoneNumber,
-    required this.golfDetails,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.role,
+    this.firstName,
+    this.lastName,
+    this.dateOfBirth,
+    this.gender,
+    this.phoneNumber,
+    this.golfDetails = const GolfDetails(
+      isMember: false,
+      playingInLeague: false,
+    ),
+    this.createdAt,
+    this.updatedAt,
   });
+
+  factory UserModel.fromMap(Map<String, dynamic> data) {
+    return UserModel(
+      uid: data['uid'] ?? '',
+      email: data['email'] ?? '',
+      role: data['role'] ?? 'user',
+      firstName: data['firstName'],
+      lastName: data['lastName'],
+      dateOfBirth:
+          data['dateOfBirth'] != null
+              ? (data['dateOfBirth'] is DateTime
+                  ? data['dateOfBirth']
+                  : (data['dateOfBirth'] as Timestamp).toDate())
+              : null,
+      gender: data['gender'],
+      phoneNumber: data['phoneNumber'],
+      golfDetails:
+          data['golfDetails'] != null
+              ? GolfDetails.fromMap(data['golfDetails'])
+              : const GolfDetails(isMember: false, playingInLeague: false),
+      createdAt:
+          data['createdAt'] != null
+              ? (data['createdAt'] is DateTime
+                  ? data['createdAt']
+                  : (data['createdAt'] as Timestamp).toDate())
+              : null,
+      updatedAt:
+          data['updatedAt'] != null
+              ? (data['updatedAt'] is DateTime
+                  ? data['updatedAt']
+                  : (data['updatedAt'] as Timestamp).toDate())
+              : null,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
       'email': email,
-      'displayName': displayName ?? '$firstName $lastName',
+      'role': role,
       'firstName': firstName,
       'lastName': lastName,
       'dateOfBirth': dateOfBirth,
@@ -39,22 +78,6 @@ class UserModel {
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
-  }
-
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      uid: map['uid'] ?? '',
-      email: map['email'] ?? '',
-      displayName: map['displayName'],
-      firstName: map['firstName'] ?? '',
-      lastName: map['lastName'] ?? '',
-      dateOfBirth: map['dateOfBirth']?.toDate() ?? DateTime.now(),
-      gender: map['gender'] ?? '',
-      phoneNumber: map['phoneNumber'] ?? '',
-      golfDetails: GolfDetails.fromMap(map['golfDetails'] ?? {}),
-      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
-      updatedAt: map['updatedAt']?.toDate() ?? DateTime.now(),
-    );
   }
 }
 
@@ -66,7 +89,7 @@ class GolfDetails {
   final String? teamId;
   final String? teamName;
 
-  GolfDetails({
+  const GolfDetails({
     this.handicap,
     required this.isMember,
     this.membershipId,

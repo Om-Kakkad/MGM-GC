@@ -100,6 +100,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final userModel = UserModel(
         uid: widget.user.uid,
         email: widget.user.email ?? '',
+        role: 'user', // Add the missing role parameter
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         dateOfBirth: _selectedDate ?? DateTime.now(),

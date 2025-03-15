@@ -1,0 +1,349 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/auth_service.dart';
+import '../../models/user_model.dart';
+
+class AdminPanel extends StatefulWidget {
+  const AdminPanel({Key? key}) : super(key: key);
+
+  @override
+  _AdminPanelState createState() => _AdminPanelState();
+}
+
+class _AdminPanelState extends State<AdminPanel> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminRole();
+  }
+
+  Future<void> _checkAdminRole() async {
+    if (_authService.currentUser != null) {
+      var userData = await _authService.getUserData(
+        _authService.currentUser!.uid,
+      );
+      if (userData.role != 'admin') {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } else {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Admin Panel')),
+      body: DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            TabBar(
+              labelColor: Theme.of(context).primaryColor,
+              tabs: const [
+                Tab(icon: Icon(Icons.people), text: 'Users'),
+                Tab(icon: Icon(Icons.groups), text: 'Teams'),
+                Tab(icon: Icon(Icons.event), text: 'Events'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildUsersTab(),
+                  _buildTeamsTab(),
+                  _buildEventsTab(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUsersTab() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore.collection('users').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        List<DocumentSnapshot> users = snapshot.data!.docs;
+
+        return ListView.builder(
+          itemCount: users.length,
+          itemBuilder: (context, index) {
+            Map<String, dynamic> userData =
+                users[index].data() as Map<String, dynamic>;
+            String userId = users[index].id;
+
+            return ListTile(
+              title: Text(userData['email'] ?? 'No email'),
+              subtitle: Text('Role: ${userData['role'] ?? 'user'}'),
+              trailing: PopupMenuButton(
+                itemBuilder:
+                    (context) => [
+                      PopupMenuItem(
+                        value: 'user',
+                        child: const Text('Set as User'),
+                      ),
+                      PopupMenuItem(
+                        value: 'league_player',
+                        child: const Text('Set as League Player'),
+                      ),
+                      PopupMenuItem(
+                        value: 'admin',
+                        child: const Text('Set as Admin'),
+                      ),
+                    ],
+                onSelected: (value) {
+                  _firestore.collection('users').doc(userId).update({
+                    'role': value,
+                  });
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTeamsTab() {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Add New Team',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Team Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passwordController,
+                    decoration: const InputDecoration(
+                      labelText: 'Team Password',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (nameController.text.isNotEmpty &&
+                          passwordController.text.isNotEmpty) {
+                        _firestore.collection('teams').add({
+                          'name': nameController.text,
+                          'password': passwordController.text,
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+                        nameController.clear();
+                        passwordController.clear();
+                      }
+                    },
+                    child: const Text('Add Team'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _firestore.collection('teams').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              List<DocumentSnapshot> teams = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: teams.length,
+                itemBuilder: (context, index) {
+                  Map<String, dynamic> teamData =
+                      teams[index].data() as Map<String, dynamic>;
+                  String teamId = teams[index].id;
+
+                  return ListTile(
+                    title: Text(teamData['name'] ?? 'Unnamed Team'),
+                    subtitle: Text('Password: ${teamData['password']}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Delete Team'),
+                              content: Text(
+                                'Are you sure you want to delete ${teamData['name']}?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    _firestore
+                                        .collection('teams')
+                                        .doc(teamId)
+                                        .delete();
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEventsTab() {
+    final TextEditingController eventNameController = TextEditingController();
+    final TextEditingController eventDateController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+
+    Future<void> _selectDate(BuildContext context) async {
+      final DateTime? picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2100),
+      );
+      if (picked != null && picked != selectedDate) {
+        setState(() {
+          selectedDate = picked;
+          eventDateController.text =
+              "${picked.day}/${picked.month}/${picked.year}";
+        });
+      }
+    }
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Create New Event',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: eventNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Event Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: eventDateController,
+                    decoration: InputDecoration(
+                      labelText: 'Event Date',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.calendar_today),
+                        onPressed: () => _selectDate(context),
+                      ),
+                    ),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (eventNameController.text.isNotEmpty &&
+                          eventDateController.text.isNotEmpty) {
+                        _firestore.collection('events').add({
+                          'name': eventNameController.text,
+                          'date': selectedDate,
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+                        eventNameController.clear();
+                        eventDateController.clear();
+                      }
+                    },
+                    child: const Text('Create Event'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _firestore.collection('events').orderBy('date').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              List<DocumentSnapshot> events = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: events.length,
+                itemBuilder: (context, index) {
+                  Map<String, dynamic> eventData =
+                      events[index].data() as Map<String, dynamic>;
+                  String eventId = events[index].id;
+                  DateTime eventDate =
+                      (eventData['date'] as Timestamp).toDate();
+
+                  return ListTile(
+                    title: Text(eventData['name'] ?? 'Unnamed Event'),
+                    subtitle: Text(
+                      'Date: ${eventDate.day}/${eventDate.month}/${eventDate.year}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        _firestore.collection('events').doc(eventId).delete();
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}

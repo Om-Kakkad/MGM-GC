@@ -3,12 +3,16 @@ import 'package:mgm_gc/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/user_model.dart';
 
 class Login extends StatelessWidget {
-  Login({super.key});
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+
+  Login({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -148,11 +152,25 @@ class Login extends StatelessWidget {
         elevation: 0,
       ),
       onPressed: () async {
-        await AuthService().signin(
-          email: _emailController.text,
-          password: _passwordController.text,
-          context: context,
-        );
+        if (_emailController.text.isNotEmpty &&
+            _passwordController.text.isNotEmpty) {
+          UserModel? userModel = await _authService.signInWithEmailAndPassword(
+            _emailController.text,
+            _passwordController.text,
+          );
+
+          if (userModel != null) {
+            // Navigate based on user role
+            if (userModel.role == 'admin') {
+              Navigator.pushReplacementNamed(context, '/admin');
+            } else if (userModel.role == 'league_player') {
+              Navigator.pushReplacementNamed(context, '/league');
+            } else {
+              // Regular user
+              Navigator.pushReplacementNamed(context, '/home');
+            }
+          }
+        }
       },
       child: const Text("Sign In"),
     );
