@@ -85,6 +85,15 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pop(context);
               },
             ),
+            // Events menu item - available for all users
+            ListTile(
+              title: const Text('Events'),
+              leading: const Icon(Icons.event),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/events');
+              },
+            ),
             // Admin-specific menu items
             if (_currentUser?.role == 'admin') ...[
               ListTile(
@@ -110,15 +119,39 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Welcome, ${_currentUser?.email}'),
-            const SizedBox(height: 20),
-            Text('Role: ${_currentUser?.role}'),
-          ],
-        ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Welcome, ${_currentUser?.email}'),
+                const SizedBox(height: 20),
+                Text('Role: ${_currentUser?.role}'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 30),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/events');
+              },
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('View Upcoming Events'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff0D6EFD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
