@@ -49,7 +49,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Create admin account if none exists
-  await createAdminAccountIfNoneExists();
+  //await createAdminAccountIfNoneExists();
 
   runApp(const MyApp());
 }

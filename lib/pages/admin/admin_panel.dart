@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
+import 'event_creation_form.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({Key? key}) : super(key: key);
@@ -231,85 +232,41 @@ class _AdminPanelState extends State<AdminPanel> {
   }
 
   Widget _buildEventsTab() {
-    final TextEditingController eventNameController = TextEditingController();
-    final TextEditingController eventDateController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-
-    Future<void> _selectDate(BuildContext context) async {
-      final DateTime? picked = await showDatePicker(
-        context: context,
-        initialDate: selectedDate,
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2100),
-      );
-      if (picked != null && picked != selectedDate) {
-        setState(() {
-          selectedDate = picked;
-          eventDateController.text =
-              "${picked.day}/${picked.month}/${picked.year}";
-        });
-      }
-    }
-
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Create New Event',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: eventNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Event Name',
-                      border: OutlineInputBorder(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EventCreationForm(),
                     ),
+                  );
+                },
+                icon: const Icon(Icons.add_circle),
+                label: const Text('Create New Event'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff0D6EFD),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: eventDateController,
-                    decoration: InputDecoration(
-                      labelText: 'Event Date',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.calendar_today),
-                        onPressed: () => _selectDate(context),
-                      ),
-                    ),
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (eventNameController.text.isNotEmpty &&
-                          eventDateController.text.isNotEmpty) {
-                        _firestore.collection('events').add({
-                          'name': eventNameController.text,
-                          'date': selectedDate,
-                          'createdAt': FieldValue.serverTimestamp(),
-                        });
-                        eventNameController.clear();
-                        eventDateController.clear();
-                      }
-                    },
-                    child: const Text('Create Event'),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: _firestore.collection('events').orderBy('date').snapshots(),
+            stream:
+                _firestore
+                    .collection('events')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -317,25 +274,106 @@ class _AdminPanelState extends State<AdminPanel> {
 
               List<DocumentSnapshot> events = snapshot.data!.docs;
 
+              if (events.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No events created yet. Click "Create New Event" to add one.',
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+
               return ListView.builder(
+                padding: const EdgeInsets.all(16),
                 itemCount: events.length,
                 itemBuilder: (context, index) {
                   Map<String, dynamic> eventData =
                       events[index].data() as Map<String, dynamic>;
                   String eventId = events[index].id;
-                  DateTime eventDate =
-                      (eventData['date'] as Timestamp).toDate();
 
-                  return ListTile(
-                    title: Text(eventData['name'] ?? 'Unnamed Event'),
-                    subtitle: Text(
-                      'Date: ${eventDate.day}/${eventDate.month}/${eventDate.year}',
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        _firestore.collection('events').doc(eventId).delete();
-                      },
+                  // Handle different event types
+                  final String eventName =
+                      eventData['eventName'] ??
+                      eventData['name'] ??
+                      'Unnamed Event';
+                  final String eventType = eventData['eventType'] ?? '';
+
+                  // Handle date display
+                  String dateDisplay = '';
+                  if (eventData.containsKey('date')) {
+                    // For legacy quick events with single date
+                    DateTime eventDate =
+                        (eventData['date'] as Timestamp).toDate();
+                    dateDisplay =
+                        "${eventDate.day}/${eventDate.month}/${eventDate.year}";
+                  } else if (eventData.containsKey('eventDates') &&
+                      (eventData['eventDates'] as List).isNotEmpty) {
+                    // For events with multiple dates
+                    final dates =
+                        (eventData['eventDates'] as List)
+                            .map((date) => (date as Timestamp).toDate())
+                            .toList();
+                    if (dates.length == 1) {
+                      dateDisplay =
+                          "${dates[0].day}/${dates[0].month}/${dates[0].year}";
+                    } else {
+                      dateDisplay = "${dates.length} dates scheduled";
+                    }
+                  }
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12.0),
+                    child: ListTile(
+                      title: Text(
+                        eventName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Date: $dateDisplay'),
+                          Text('Type: $eventType'),
+                          if (eventData.containsKey('eventDescription'))
+                            Text(
+                              'Description: ${eventData['eventDescription']}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Delete Event'),
+                                content: const Text(
+                                  'Are you sure you want to delete this event?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      _firestore
+                                          .collection('events')
+                                          .doc(eventId)
+                                          .delete();
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      isThreeLine: true,
                     ),
                   );
                 },
