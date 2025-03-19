@@ -138,7 +138,12 @@ class AuthService {
                 .doc(user.golfDetails.teamId)
                 .get();
 
-        if (!teamDoc.exists || teamDoc.data()?['password'] != teamPassword) {
+        final teamData = teamDoc.data();
+        // Check both possible password field names
+        final correctPassword =
+            teamData?['teamPassword'] ?? teamData?['password'];
+
+        if (!teamDoc.exists || correctPassword != teamPassword) {
           Fluttertoast.showToast(
             msg: "Incorrect team password",
             toastLength: Toast.LENGTH_LONG,
@@ -151,7 +156,7 @@ class AuthService {
         }
 
         // If the team password is correct, update the role to league_player
-        if (teamDoc.data()?['password'] == teamPassword) {
+        if (correctPassword == teamPassword) {
           // Create a new user model with the updated role
           final updatedUser = UserModel(
             uid: user.uid,
@@ -172,6 +177,14 @@ class AuthService {
               .collection('users')
               .doc(user.uid)
               .set(updatedUser.toMap());
+
+          // Add the user to the team's players array
+          await _firestore
+              .collection('teams')
+              .doc(user.golfDetails.teamId)
+              .update({
+                'players': FieldValue.arrayUnion([user.uid]),
+              });
         } else {
           // Save original user data to Firestore
           await _firestore.collection('users').doc(user.uid).set(user.toMap());

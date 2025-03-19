@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import 'event_creation_form.dart';
+import 'package:mgm_gc/pages/admin/team_creation.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({Key? key}) : super(key: key);
@@ -14,6 +15,7 @@ class AdminPanel extends StatefulWidget {
 class _AdminPanelState extends State<AdminPanel> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService = AuthService();
+  int _currentIndex = 0;
 
   @override
   void initState() {
@@ -38,29 +40,29 @@ class _AdminPanelState extends State<AdminPanel> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Admin Panel')),
-      body: DefaultTabController(
-        length: 3,
-        child: Column(
-          children: [
-            TabBar(
-              labelColor: Theme.of(context).primaryColor,
-              tabs: const [
-                Tab(icon: Icon(Icons.people), text: 'Users'),
-                Tab(icon: Icon(Icons.groups), text: 'Teams'),
-                Tab(icon: Icon(Icons.event), text: 'Events'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildUsersTab(),
-                  _buildTeamsTab(),
-                  _buildEventsTab(),
-                ],
-              ),
-            ),
-          ],
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildUsersTab(),
+          _buildEventsTab(),
+          const SingleChildScrollView(
+            padding: EdgeInsets.all(16),
+            child: TeamCreationForm(),
+          ),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
+          BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
+        ],
       ),
     );
   }

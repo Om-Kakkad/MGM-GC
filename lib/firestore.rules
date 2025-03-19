@@ -34,7 +34,12 @@ service cloud.firestore {
     // Teams collection rules
     match /teams/{teamId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      // Allow admins full write access
+      allow create, delete: if isAdmin();
+      // Allow admins to update any field OR allow authenticated users to only update the players array
+      allow update: if isAdmin() || 
+                     (isAuthenticated() && 
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players']));
     }
     
     // Events collection rules

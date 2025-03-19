@@ -135,8 +135,10 @@ class Team {
   factory Team.fromMap(Map<String, dynamic> map) {
     return Team(
       id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      password: map['password'] ?? '',
+      // Check for both field name possibilities (teamName from new teams or name from older teams)
+      name: map['teamName'] ?? map['name'] ?? '',
+      // Check for both password field names
+      password: map['teamPassword'] ?? map['password'] ?? '',
     );
   }
 }
