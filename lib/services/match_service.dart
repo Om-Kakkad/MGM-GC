@@ -135,6 +135,10 @@ class MatchService {
           );
         }
 
+        // Update teams and players with the matchId
+        await _updateTeamsWithMatch(match.teams, matchId);
+        await _updatePlayersWithMatch(match.players, matchId);
+
         return matchId;
       } catch (e) {
         print('Error in initial document creation: $e');
@@ -144,6 +148,87 @@ class MatchService {
       print('Error creating match: $e');
       print('Error stack trace: ${StackTrace.current}');
       rethrow;
+    }
+  }
+
+  // Update team documents with matchId
+  Future<void> _updateTeamsWithMatch(
+    List<String> teamIds,
+    String matchId,
+  ) async {
+    try {
+      for (String teamId in teamIds) {
+        DocumentReference teamRef = _firestore.collection('teams').doc(teamId);
+        DocumentSnapshot teamDoc = await teamRef.get();
+
+        if (teamDoc.exists) {
+          // Get current matches array or create a new one
+          List<String> matches = [];
+          if (teamDoc.data() != null) {
+            Map<String, dynamic> data = teamDoc.data() as Map<String, dynamic>;
+            if (data.containsKey('matches') && data['matches'] is List) {
+              matches = List<String>.from(data['matches']);
+            }
+          }
+
+          // Add matchId if it doesn't exist already
+          if (!matches.contains(matchId)) {
+            matches.add(matchId);
+            await teamRef.update({'matches': matches});
+            print('Updated team $teamId with match $matchId');
+          }
+        } else {
+          print('Team $teamId not found, cannot update with match');
+        }
+      }
+    } catch (e) {
+      print('Error updating teams with match: $e');
+      // Don't throw, just log the error to avoid breaking match creation
+    }
+  }
+
+  // Update player documents with matchId
+  Future<void> _updatePlayersWithMatch(
+    Map<String, List<String>> players,
+    String matchId,
+  ) async {
+    try {
+      // Process all players from all teams
+      List<String> allPlayerIds = [];
+      players.forEach((_, playerList) {
+        allPlayerIds.addAll(playerList);
+      });
+
+      for (String playerId in allPlayerIds) {
+        DocumentReference playerRef = _firestore
+            .collection('users')
+            .doc(playerId);
+        DocumentSnapshot playerDoc = await playerRef.get();
+
+        if (playerDoc.exists) {
+          // Get current matches array or create a new one
+          List<String> matches = [];
+          if (playerDoc.data() != null) {
+            Map<String, dynamic> data =
+                playerDoc.data() as Map<String, dynamic>;
+            if (data.containsKey('matches') && data['matches'] is List) {
+              matches = List<String>.from(data['matches']);
+            }
+          }
+
+          // Add matchId if it doesn't exist already
+          if (!matches.contains(matchId)) {
+            matches.add(matchId);
+            await playerRef.update({'matches': matches});
+            print('Updated player $playerId with match $matchId');
+          }
+        } else {
+          print('Player $playerId not found, cannot update with match');
+        }
+      }
+    } catch (e) {
+      print('Error updating players with match: $e');
+      // Don't throw, just log the error to avoid breaking match creation
     }
   }
 }
