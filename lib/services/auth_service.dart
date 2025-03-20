@@ -157,7 +157,52 @@ class AuthService {
 
         // If the team password is correct, update the role to league_player
         if (correctPassword == teamPassword) {
-          // Create a new user model with the updated role
+          // Get the associated event for the team to determine brackets
+          final String? eventId = teamData?['eventId'];
+          String? assignedBracket;
+
+          // Try to determine the player's bracket if they have a handicap and the team has an associated event
+          if (eventId != null && user.golfDetails.handicap != null) {
+            // Fetch the event document to get bracket definitions
+            final eventDoc =
+                await _firestore.collection('events').doc(eventId).get();
+
+            if (eventDoc.exists) {
+              final eventData = eventDoc.data();
+              final brackets = eventData?['brackets'];
+
+              if (brackets != null) {
+                // Check which bracket the player falls into based on handicap
+                final double handicap = user.golfDetails.handicap!;
+
+                // Check gold bracket
+                final goldBracket = brackets['gold'];
+                if (goldBracket != null &&
+                    handicap >= goldBracket['minHandicap'] &&
+                    handicap <= goldBracket['maxHandicap']) {
+                  assignedBracket = 'gold';
+                }
+
+                // Check silver bracket
+                final silverBracket = brackets['silver'];
+                if (silverBracket != null &&
+                    handicap >= silverBracket['minHandicap'] &&
+                    handicap <= silverBracket['maxHandicap']) {
+                  assignedBracket = 'silver';
+                }
+
+                // Check bronze bracket
+                final bronzeBracket = brackets['bronze'];
+                if (bronzeBracket != null &&
+                    handicap >= bronzeBracket['minHandicap'] &&
+                    handicap <= bronzeBracket['maxHandicap']) {
+                  assignedBracket = 'bronze';
+                }
+              }
+            }
+          }
+
+          // Create a new user model with the updated role and bracket
           final updatedUser = UserModel(
             uid: user.uid,
             email: user.email,
@@ -167,7 +212,15 @@ class AuthService {
             dateOfBirth: user.dateOfBirth,
             gender: user.gender,
             phoneNumber: user.phoneNumber,
-            golfDetails: user.golfDetails,
+            golfDetails: GolfDetails(
+              handicap: user.golfDetails.handicap,
+              isMember: user.golfDetails.isMember,
+              membershipId: user.golfDetails.membershipId,
+              playingInLeague: user.golfDetails.playingInLeague,
+              teamId: user.golfDetails.teamId,
+              teamName: user.golfDetails.teamName,
+              bracket: assignedBracket, // Add bracket assignment
+            ),
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
           );

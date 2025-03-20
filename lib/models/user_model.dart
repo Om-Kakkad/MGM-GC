@@ -88,14 +88,16 @@ class GolfDetails {
   final bool playingInLeague;
   final String? teamId;
   final String? teamName;
+  final String? bracket; // New field to store player's bracket
 
   const GolfDetails({
     this.handicap,
-    required this.isMember,
+    this.isMember = false,
     this.membershipId,
-    required this.playingInLeague,
+    this.playingInLeague = false,
     this.teamId,
     this.teamName,
+    this.bracket, // Added bracket parameter
   });
 
   Map<String, dynamic> toMap() {
@@ -106,17 +108,19 @@ class GolfDetails {
       'playingInLeague': playingInLeague,
       'teamId': teamId,
       'teamName': teamName,
+      'bracket': bracket, // Added bracket to map
     };
   }
 
   factory GolfDetails.fromMap(Map<String, dynamic> map) {
     return GolfDetails(
-      handicap: map['handicap']?.toDouble(),
+      handicap: map['handicap'],
       isMember: map['isMember'] ?? false,
       membershipId: map['membershipId'],
       playingInLeague: map['playingInLeague'] ?? false,
       teamId: map['teamId'],
       teamName: map['teamName'],
+      bracket: map['bracket'], // Read bracket from map
     );
   }
 }

@@ -21,6 +21,26 @@ class _EventCreationFormState extends State<EventCreationForm> {
   final TextEditingController _prizeDetailsController = TextEditingController();
   final TextEditingController _customRulesController = TextEditingController();
 
+  // Bracket controllers
+  final TextEditingController _goldMinController = TextEditingController(
+    text: '0',
+  );
+  final TextEditingController _goldMaxController = TextEditingController(
+    text: '10',
+  );
+  final TextEditingController _silverMinController = TextEditingController(
+    text: '11',
+  );
+  final TextEditingController _silverMaxController = TextEditingController(
+    text: '16',
+  );
+  final TextEditingController _bronzeMinController = TextEditingController(
+    text: '17',
+  );
+  final TextEditingController _bronzeMaxController = TextEditingController(
+    text: '24',
+  );
+
   // Form values
   String _eventType = 'League';
   String _scoringType = 'Stableford';
@@ -36,6 +56,12 @@ class _EventCreationFormState extends State<EventCreationForm> {
     _descriptionController.dispose();
     _prizeDetailsController.dispose();
     _customRulesController.dispose();
+    _goldMinController.dispose();
+    _goldMaxController.dispose();
+    _silverMinController.dispose();
+    _silverMaxController.dispose();
+    _bronzeMinController.dispose();
+    _bronzeMaxController.dispose();
     super.dispose();
   }
 
@@ -85,6 +111,25 @@ class _EventCreationFormState extends State<EventCreationForm> {
         // Add event-specific fields based on event type
         if (_eventType == 'League') {
           eventData['scoringType'] = _scoringType;
+
+          // Add bracket definitions for league events
+          eventData['brackets'] = {
+            'gold': {
+              'name': 'Gold Bracket',
+              'minHandicap': int.parse(_goldMinController.text),
+              'maxHandicap': int.parse(_goldMaxController.text),
+            },
+            'silver': {
+              'name': 'Silver Bracket',
+              'minHandicap': int.parse(_silverMinController.text),
+              'maxHandicap': int.parse(_silverMaxController.text),
+            },
+            'bronze': {
+              'name': 'Bronze Bracket',
+              'minHandicap': int.parse(_bronzeMinController.text),
+              'maxHandicap': int.parse(_bronzeMaxController.text),
+            },
+          };
         } else {
           eventData['tournamentFormat'] = _tournamentFormat;
           eventData['bracketType'] = _bracketType;
@@ -288,6 +333,31 @@ class _EventCreationFormState extends State<EventCreationForm> {
                     });
                   },
                 ),
+
+                const SizedBox(height: 25),
+                _buildSectionTitle('Bracket Definitions'),
+                const SizedBox(height: 10),
+
+                // Gold Bracket
+                _buildBracketFields(
+                  bracketName: 'Gold Bracket',
+                  minController: _goldMinController,
+                  maxController: _goldMaxController,
+                ),
+
+                // Silver Bracket
+                _buildBracketFields(
+                  bracketName: 'Silver Bracket',
+                  minController: _silverMinController,
+                  maxController: _silverMaxController,
+                ),
+
+                // Bronze Bracket
+                _buildBracketFields(
+                  bracketName: 'Bronze Bracket',
+                  minController: _bronzeMinController,
+                  maxController: _bronzeMaxController,
+                ),
               ] else ...[
                 _buildSectionTitle('Tournament-Specific Details'),
                 const SizedBox(height: 10),
@@ -384,6 +454,112 @@ class _EventCreationFormState extends State<EventCreationForm> {
           ),
         ),
       ),
+    );
+  }
+
+  // New method to build bracket definition fields
+  Widget _buildBracketFields({
+    required String bracketName,
+    required TextEditingController minController,
+    required TextEditingController maxController,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          bracketName,
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Min Handicap',
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: minController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xffF7F7F9),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Enter valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Max Handicap',
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  TextFormField(
+                    controller: maxController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xffF7F7F9),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Required';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Enter valid number';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 

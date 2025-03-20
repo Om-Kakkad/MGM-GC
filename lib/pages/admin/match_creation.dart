@@ -75,13 +75,31 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
     });
 
     try {
+      print('Loading teams for event: $_selectedEventId');
       final teams = await _matchService.getTeamsByEvent(_selectedEventId!);
+
+      print('Teams loaded: ${teams.length}');
+      if (teams.isEmpty) {
+        // Show a message if no teams are available
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No teams found for this event. Please create teams for this event first.',
+              ),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+
       setState(() {
         _teamAOptions = teams;
         _teamBOptions = teams;
         _isLoading = false;
       });
     } catch (e) {
+      print('Error in _loadTeams: $e');
       setState(() {
         _isLoading = false;
       });

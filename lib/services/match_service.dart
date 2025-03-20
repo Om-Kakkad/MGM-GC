@@ -24,23 +24,48 @@ class MatchService {
     }
   }
 
-  // Get teams by event ID
+  // Get teams by event ID - Fix this method to properly query teams
   Future<List<Map<String, dynamic>>> getTeamsByEvent(String eventId) async {
     try {
-      QuerySnapshot snapshot =
+      print('Fetching teams for event ID: $eventId');
+
+      // Query teams where eventId field matches the provided event ID
+      final QuerySnapshot snapshot =
           await _firestore
               .collection('teams')
-              .where('eventID', isEqualTo: eventId)
+              .where('eventId', isEqualTo: eventId)
               .get();
 
+      print('Found ${snapshot.docs.length} teams for event $eventId');
+
+      // If no teams are found with the eventId field, try querying all teams
+      // This is a fallback measure in case teams were created without eventId
+      if (snapshot.docs.isEmpty) {
+        print(
+          'No teams found with eventId field, fetching all teams as fallback',
+        );
+        final QuerySnapshot allTeamsSnapshot =
+            await _firestore.collection('teams').get();
+
+        return allTeamsSnapshot.docs.map((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return {
+            'id': doc.id,
+            'teamName': data['teamName'] ?? data['name'] ?? 'Unnamed Team',
+          };
+        }).toList();
+      }
+
       return snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return data;
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'teamName': data['teamName'] ?? data['name'] ?? 'Unnamed Team',
+        };
       }).toList();
     } catch (e) {
       print('Error getting teams by event: $e');
-      rethrow;
+      return [];
     }
   }
 

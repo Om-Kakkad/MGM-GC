@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mgm_gc/models/team.dart';
 import 'package:mgm_gc/services/team_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class TeamCreationForm extends StatefulWidget {
   const TeamCreationForm({super.key});
@@ -12,90 +14,157 @@ class TeamCreationForm extends StatefulWidget {
 class _TeamCreationFormState extends State<TeamCreationForm> {
   final _formKey = GlobalKey<FormState>();
   final TeamService _teamService = TeamService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String _teamName = '';
-  String _teamPassword = '';
+  // Controllers
+  final TextEditingController _teamNameController = TextEditingController();
+  final TextEditingController _teamPasswordController = TextEditingController();
+
   String? _selectedEventId;
-
-  List<Map<String, dynamic>> _leagueEvents = [];
+  List<DocumentSnapshot> _leagueEvents = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLeagueEvents();
+    _fetchLeagueEvents();
   }
 
-  Future<void> _loadLeagueEvents() async {
+  Future<void> _fetchLeagueEvents() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final events = await _teamService.getLeagueEvents();
-      print("Loaded ${events.length} league events"); // Debug print
-
-      // Debug each event
-      for (var event in events) {
-        print("Event: ${event['eventName']} - ID: ${event['id']}");
-      }
+      final eventsSnapshot =
+          await _firestore
+              .collection('events')
+              .where('eventType', isEqualTo: 'League')
+              .get();
 
       setState(() {
-        _leagueEvents = events;
+        _leagueEvents = eventsSnapshot.docs;
         _isLoading = false;
       });
     } catch (e) {
-      print("Error loading league events: $e"); // Better error logging
       setState(() {
         _isLoading = false;
       });
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load events: $e')));
-      }
+      print('Error fetching league events: $e');
     }
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _createTeam() async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-
-      setState(() {
-        _isLoading = true;
-      });
+      if (_selectedEventId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select an event for this team')),
+        );
+        return;
+      }
 
       try {
-        Team newTeam = Team(
-          teamName: _teamName,
-          teamPassword: _teamPassword,
-          eventID: _selectedEventId!,
-          players: [],
+        setState(() {
+          _isLoading = true;
+        });
+
+        // First, verify the event exists
+        final eventDoc =
+            await _firestore.collection('events').doc(_selectedEventId).get();
+        if (!eventDoc.exists) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Selected event no longer exists')),
+          );
+          return;
+        }
+
+        // Create the team with eventId
+        final teamRef = await _firestore.collection('teams').add({
+          'teamName': _teamNameController.text,
+          'password': _teamPasswordController.text,
+          'eventId': _selectedEventId, // Store the event ID reference
+          'createdAt': FieldValue.serverTimestamp(),
+          'players': [], // Initialize empty players array
+        });
+
+        print(
+          'Created team with ID: ${teamRef.id}, linked to event: $_selectedEventId',
         );
 
-        await _teamService.createTeam(newTeam);
-
+        _teamNameController.clear();
+        _teamPasswordController.clear();
         setState(() {
+          _selectedEventId = null;
           _isLoading = false;
         });
 
-        // Reset the form
-        _formKey.currentState!.reset();
-        _selectedEventId = null;
-
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Team created successfully!')),
+          const SnackBar(content: Text('Team created successfully')),
         );
       } catch (e) {
         setState(() {
           _isLoading = false;
         });
-
+        print('Error creating team: $e');
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error creating team: $e')));
       }
     }
+  }
+
+  Widget _buildEventDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Associate with League Event',
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.normal,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedEventId,
+          items:
+              _leagueEvents.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final eventName = data['eventName'] ?? 'Unnamed Event';
+                return DropdownMenuItem<String>(
+                  value: doc.id,
+                  child: Text(eventName),
+                );
+              }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedEventId = value;
+            });
+          },
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xffF7F7F9),
+            border: OutlineInputBorder(
+              borderSide: BorderSide.none,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            hintText: 'Select a league event',
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please select an event';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -116,6 +185,7 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _teamNameController,
                 decoration: const InputDecoration(
                   labelText: 'Team Name',
                   border: OutlineInputBorder(),
@@ -126,12 +196,10 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _teamName = value!;
-                },
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _teamPasswordController,
                 decoration: const InputDecoration(
                   labelText: 'Team Password',
                   border: OutlineInputBorder(),
@@ -143,9 +211,6 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
                   }
                   return null;
                 },
-                onSaved: (value) {
-                  _teamPassword = value!;
-                },
               ),
               const SizedBox(height: 16),
               Row(
@@ -156,7 +221,7 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
                     icon: const Icon(Icons.refresh),
                     tooltip: 'Refresh events list',
                     onPressed: () {
-                      _loadLeagueEvents();
+                      _fetchLeagueEvents();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Refreshing league events...'),
@@ -175,41 +240,14 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
                   "No league events available. Please create a league event first.",
                 )
               else
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Select League Event',
-                    border: OutlineInputBorder(),
-                  ),
-                  hint: const Text('Select a league event'),
-                  value: _selectedEventId,
-                  items:
-                      _leagueEvents.map((event) {
-                        String id = event['id'] ?? '';
-                        String name = event['eventName'] ?? 'Unnamed Event';
-                        return DropdownMenuItem<String>(
-                          value: id,
-                          child: Text(name),
-                        );
-                      }).toList(),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please select an event';
-                    }
-                    return null;
-                  },
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedEventId = newValue;
-                    });
-                  },
-                ),
+                _buildEventDropdown(),
               const SizedBox(height: 24),
               Center(
                 child:
                     _isLoading
                         ? const CircularProgressIndicator()
                         : ElevatedButton(
-                          onPressed: _submitForm,
+                          onPressed: _createTeam,
                           child: const Padding(
                             padding: EdgeInsets.symmetric(
                               vertical: 12,
