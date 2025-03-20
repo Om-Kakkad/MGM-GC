@@ -3,8 +3,6 @@ import 'package:mgm_gc/services/auth_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/user_model.dart';
 
 class Login extends StatelessWidget {
@@ -12,7 +10,7 @@ class Login extends StatelessWidget {
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
 
-  Login({Key? key}) : super(key: key);
+  Login({super.key});
 
   @override
   Widget build(BuildContext context) {

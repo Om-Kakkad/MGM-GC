@@ -3,7 +3,7 @@ import 'package:mgm_gc/models/team.dart';
 import 'package:mgm_gc/services/team_service.dart';
 
 class TeamCreationForm extends StatefulWidget {
-  const TeamCreationForm({Key? key}) : super(key: key);
+  const TeamCreationForm({super.key});
 
   @override
   State<TeamCreationForm> createState() => _TeamCreationFormState();

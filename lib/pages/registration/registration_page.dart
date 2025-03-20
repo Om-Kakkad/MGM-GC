@@ -9,7 +9,7 @@ import 'package:mgm_gc/services/auth_service.dart';
 class RegistrationPage extends StatefulWidget {
   final User user;
 
-  const RegistrationPage({Key? key, required this.user}) : super(key: key);
+  const RegistrationPage({super.key, required this.user});
 
   @override
   _RegistrationPageState createState() => _RegistrationPageState();
@@ -131,7 +131,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
               .collection('teams')
               .doc(teamId)
               .get();
-      return doc.data()?['name'] as String?;
+
+      // Check for both possible field names (teamName and name)
+      Map<String, dynamic>? data = doc.data();
+      if (data != null) {
+        // First try teamName, then fall back to name
+        return data['teamName'] ?? data['name'] as String?;
+      }
+      return null;
     } catch (e) {
       return null;
     }

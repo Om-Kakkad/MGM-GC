@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 class EventCreationForm extends StatefulWidget {
-  const EventCreationForm({Key? key}) : super(key: key);
+  const EventCreationForm({super.key});
 
   @override
   _EventCreationFormState createState() => _EventCreationFormState();

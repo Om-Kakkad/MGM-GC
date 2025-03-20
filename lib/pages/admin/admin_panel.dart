@@ -4,9 +4,12 @@ import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import 'event_creation_form.dart';
 import 'package:mgm_gc/pages/admin/team_creation.dart';
+import 'package:mgm_gc/pages/admin/match_creation.dart';
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AdminPanel extends StatefulWidget {
-  const AdminPanel({Key? key}) : super(key: key);
+  const AdminPanel({super.key});
 
   @override
   _AdminPanelState createState() => _AdminPanelState();
@@ -49,6 +52,7 @@ class _AdminPanelState extends State<AdminPanel> {
             padding: EdgeInsets.all(16),
             child: TeamCreationForm(),
           ),
+          _buildFourBallTab(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -62,7 +66,12 @@ class _AdminPanelState extends State<AdminPanel> {
           BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
           BottomNavigationBarItem(icon: Icon(Icons.event), label: 'Events'),
           BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Teams'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.sports_golf),
+            label: '4 Ball',
+          ),
         ],
+        type: BottomNavigationBarType.fixed, // Required for more than 3 items
       ),
     );
   }
@@ -384,6 +393,317 @@ class _AdminPanelState extends State<AdminPanel> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFourBallTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '4-Ball Matches',
+                style: GoogleFonts.raleway(
+                  textStyle: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MatchCreationForm(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Create Match'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xff0D6EFD),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream:
+                _firestore
+                    .collection('fourBalls')
+                    .orderBy('matchDateTime', descending: true)
+                    .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.sports_golf,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No matches created yet',
+                        style: GoogleFonts.raleway(
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Click "Create Match" to add a new 4-ball match',
+                        style: GoogleFonts.raleway(
+                          textStyle: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  final doc = snapshot.data!.docs[index];
+                  final match = doc.data() as Map<String, dynamic>;
+
+                  // Format date
+                  final DateTime matchDate =
+                      (match['matchDateTime'] as Timestamp).toDate();
+                  final String formattedDate = DateFormat(
+                    'MMM dd, yyyy - hh:mm a',
+                  ).format(matchDate);
+
+                  // Get match status and type
+                  final String matchStatus = match['matchStatus'] ?? 'active';
+                  final String matchType = match['matchType'] ?? '4-ball';
+
+                  // Get team IDs
+                  final List<String> teamIds = List<String>.from(
+                    match['teams'] ?? [],
+                  );
+
+                  return FutureBuilder<List<String>>(
+                    future: _getTeamNames(teamIds),
+                    builder: (context, teamsSnapshot) {
+                      final String teamNames =
+                          teamsSnapshot.data != null
+                              ? teamsSnapshot.data!.join(' vs ')
+                              : 'Loading teams...';
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      teamNames,
+                                      style: GoogleFonts.raleway(
+                                        textStyle: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _getStatusColor(matchStatus),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      matchStatus.toUpperCase(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.event,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    formattedDate,
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.sports_golf,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    matchType,
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // View Details Button
+                                  OutlinedButton(
+                                    onPressed: () {
+                                      // TODO: Navigate to match details page
+                                    },
+                                    style: OutlinedButton.styleFrom(
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text('View Details'),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  // Delete Button
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      _showDeleteMatchDialog(doc.id);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<List<String>> _getTeamNames(List<String> teamIds) async {
+    List<String> teamNames = [];
+
+    for (String teamId in teamIds) {
+      try {
+        DocumentSnapshot teamDoc =
+            await _firestore.collection('teams').doc(teamId).get();
+
+        if (teamDoc.exists) {
+          Map<String, dynamic> teamData =
+              teamDoc.data() as Map<String, dynamic>;
+          String teamName =
+              teamData['teamName'] ?? teamData['name'] ?? 'Unknown Team';
+          teamNames.add(teamName);
+        } else {
+          teamNames.add('Unknown Team');
+        }
+      } catch (e) {
+        print('Error getting team name: $e');
+        teamNames.add('Error');
+      }
+    }
+
+    return teamNames;
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'completed':
+        return Colors.blue;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _showDeleteMatchDialog(String matchId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Match'),
+          content: const Text(
+            'Are you sure you want to delete this match? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _firestore.collection('fourBalls').doc(matchId).delete();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Match deleted successfully')),
+                );
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

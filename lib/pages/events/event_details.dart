@@ -4,7 +4,7 @@ import 'package:mgm_gc/models/event.dart';
 import 'package:mgm_gc/services/event_service.dart';
 
 class EventDetailsPage extends StatefulWidget {
-  const EventDetailsPage({Key? key}) : super(key: key);
+  const EventDetailsPage({super.key});
 
   @override
   _EventDetailsPageState createState() => _EventDetailsPageState();

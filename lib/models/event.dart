@@ -55,19 +55,13 @@ class LeagueEvent extends Event {
   final String scoringType;
 
   LeagueEvent({
-    required String id,
-    required String eventName,
-    required String eventDescription,
-    required String eventType,
-    required List<DateTime> eventDates,
+    required super.id,
+    required super.eventName,
+    required super.eventDescription,
+    required super.eventType,
+    required super.eventDates,
     required this.scoringType,
-  }) : super(
-         id: id,
-         eventName: eventName,
-         eventDescription: eventDescription,
-         eventType: eventType,
-         eventDates: eventDates,
-       );
+  });
 }
 
 class TournamentEvent extends Event {
@@ -77,20 +71,14 @@ class TournamentEvent extends Event {
   final String customRules;
 
   TournamentEvent({
-    required String id,
-    required String eventName,
-    required String eventDescription,
-    required String eventType,
-    required List<DateTime> eventDates,
+    required super.id,
+    required super.eventName,
+    required super.eventDescription,
+    required super.eventType,
+    required super.eventDates,
     required this.tournamentFormat,
     required this.bracketType,
     required this.prizeDetails,
     required this.customRules,
-  }) : super(
-         id: id,
-         eventName: eventName,
-         eventDescription: eventDescription,
-         eventType: eventType,
-         eventDates: eventDates,
-       );
+  });
 }

@@ -54,5 +54,11 @@ service cloud.firestore {
       allow create: if isLeaguePlayer() || isAdmin();
       allow update, delete: if isAdmin();
     }
+    
+    // 4-Ball Matches rules
+    match /fourBalls/{matchId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

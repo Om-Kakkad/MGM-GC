@@ -26,7 +26,7 @@ class TeamService {
       return teamRef.id;
     } catch (e) {
       print('Error creating team: $e');
-      throw e;
+      rethrow;
     }
   }
 

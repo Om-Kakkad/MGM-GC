@@ -5,6 +5,7 @@ import 'package:mgm_gc/pages/login/login.dart';
 import 'package:mgm_gc/pages/signup/signup.dart';
 import 'package:mgm_gc/pages/home/home_page.dart';
 import 'package:mgm_gc/pages/admin/admin_panel.dart';
+import 'package:mgm_gc/pages/admin/match_creation.dart';
 import 'package:mgm_gc/pages/league/league_features.dart';
 import 'package:mgm_gc/pages/events/events_list.dart';
 import 'package:mgm_gc/pages/events/event_details.dart';
@@ -72,6 +73,7 @@ class MyApp extends StatelessWidget {
         '/league': (context) => LeagueFeatures(),
         '/events': (context) => const EventsListPage(),
         '/event-details': (context) => const EventDetailsPage(),
+        '/create-match': (context) => const MatchCreationForm(),
       },
     );
   }

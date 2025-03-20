@@ -4,7 +4,7 @@ import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 
 class LeagueFeatures extends StatefulWidget {
-  const LeagueFeatures({Key? key}) : super(key: key);
+  const LeagueFeatures({super.key});
 
   @override
   _LeagueFeaturesState createState() => _LeagueFeaturesState();
