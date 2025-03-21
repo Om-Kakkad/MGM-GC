@@ -24,7 +24,8 @@ class _AdminPanelState extends State<AdminPanel>
   final TeamService _teamService = TeamService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService = AuthService();
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
+  final bool _isLoading = false;
 
   @override
   void initState() {
@@ -68,56 +69,124 @@ class _AdminPanelState extends State<AdminPanel>
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Theme.of(context).primaryColor,
-          tabs: const [
-            Tab(text: 'Events'),
-            Tab(text: 'Teams'),
-            Tab(text: '4-Ball'),
-          ],
-        ),
-        actions: [
-          // Add logout button to AppBar
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () {
-              _showLogoutConfirmationDialog();
-            },
+      ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User Management Card
+                    _buildAdminCard(
+                      title: 'User Management',
+                      description:
+                          'Manage users, delete accounts, and handle user roles',
+                      icon: Icons.people,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/user-management');
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Event Management Card
+                    _buildAdminCard(
+                      title: 'Event Management',
+                      description: 'Create, edit and delete events',
+                      icon: Icons.event,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/event-management');
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Team Management Card
+                    _buildAdminCard(
+                      title: 'Team Management',
+                      description: 'Create, edit and delete teams',
+                      icon: Icons.group_work,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/team-management');
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Match Management Card
+                    _buildAdminCard(
+                      title: 'Match Management',
+                      description: 'Create and schedule matches between teams',
+                      icon: Icons.sports_golf,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/match-management');
+                      },
+                    ),
+
+                    // ...other admin features...
+                  ],
+                ),
+              ),
+    );
+  }
+
+  Widget _buildAdminCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xff0D6EFD).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: const Color(0xff0D6EFD), size: 32),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios),
+            ],
           ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // Event Tab
-          _buildEventsTab(),
-
-          // Teams Tab
-          TeamsTab(teamService: _teamService),
-
-          // 4-Ball Tab
-          _buildFourBallTab(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Different actions based on current tab
-          switch (_tabController.index) {
-            case 0: // Events
-              Navigator.pushNamed(context, '/create-event');
-              break;
-            case 1: // Teams
-              Navigator.pushNamed(context, '/create-team');
-              break;
-            case 2: // 4-Ball
-              Navigator.pushNamed(context, '/create-match');
-              break;
-          }
-        },
-        child: const Icon(Icons.add),
+        ),
       ),
     );
   }

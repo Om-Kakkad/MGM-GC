@@ -305,7 +305,7 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
               'Match was created with ID: $matchId, continuing despite error',
             );
           } else {
-            throw e; // Re-throw if no match was created
+            rethrow; // Re-throw if no match was created
           }
         }
 
@@ -712,14 +712,9 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
   }) {
     // Handle empty items list to avoid issues
     if (items.isEmpty) {
-      items =
-          [
-                DropdownMenuItem<T>(
-                  value: null,
-                  child: Text('No options available'),
-                ),
-              ]
-              as List<DropdownMenuItem<T>>;
+      items = [
+        DropdownMenuItem<T>(value: null, child: Text('No options available')),
+      ];
     }
 
     return Column(

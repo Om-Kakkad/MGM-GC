@@ -7,11 +7,16 @@ import 'package:mgm_gc/pages/home/home_page.dart';
 import 'package:mgm_gc/pages/admin/admin_panel.dart';
 import 'package:mgm_gc/pages/admin/match_creation.dart';
 import 'package:mgm_gc/pages/admin/team_creation.dart';
+import 'package:mgm_gc/pages/admin/user_management.dart';
+import 'package:mgm_gc/pages/admin/team_management.dart';
+import 'package:mgm_gc/pages/admin/event_management.dart';
+import 'package:mgm_gc/pages/admin/event_creation_form.dart';
 import 'package:mgm_gc/pages/league/league_features.dart';
 import 'package:mgm_gc/pages/events/events_list.dart';
 import 'package:mgm_gc/pages/events/event_details.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mgm_gc/pages/admin/match_management.dart';
 
 Future<void> createAdminAccountIfNoneExists() async {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -75,8 +80,12 @@ class MyApp extends StatelessWidget {
         '/events': (context) => const EventsListPage(),
         '/event-details': (context) => const EventDetailsPage(),
         '/create-match': (context) => const MatchCreationForm(),
-        '/create-team':
-            (context) => const TeamCreationForm(), // Fixed class name
+        '/create-team': (context) => const TeamCreationForm(),
+        '/user-management': (context) => const UserManagementPage(),
+        '/team-management': (context) => const TeamManagementPage(),
+        '/event-management': (context) => const EventManagementPage(),
+        '/match-management': (context) => const MatchManagementPage(),
+        '/create-event': (context) => const EventCreationForm(),
       },
     );
   }

@@ -28,6 +28,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update: if isOwner(userId) || isAdmin();
+      // Allow admins to delete users
       allow delete: if isAdmin();
     }
     
@@ -59,6 +60,13 @@ service cloud.firestore {
     match /fourBalls/{matchId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if isAdmin();
+    }
+    
+    // Allow cascade batch deletions by admins
+    match /{document=**} {
+      allow read, write: if isAdmin() && 
+                         (request.resource == null || 
+                          request.resource.data.keys().hasAny(['players', 'teams', 'eventId', 'userId']));
     }
   }
 }

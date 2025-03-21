@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mgm_gc/models/team.dart';
 import 'package:mgm_gc/services/team_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
