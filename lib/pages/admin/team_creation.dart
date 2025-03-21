@@ -104,6 +104,9 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Team created successfully')),
         );
+
+        // Navigate back to the admin panel
+        Navigator.pop(context);
       } catch (e) {
         setState(() {
           _isLoading = false;

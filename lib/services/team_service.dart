@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mgm_gc/models/team.dart';
+import 'package:mgm_gc/models/event.dart';
 
 class TeamService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -84,6 +85,54 @@ class TeamService {
       return leagueEvents;
     } catch (e) {
       print('Error fetching league events: $e');
+      return [];
+    }
+  }
+
+  // Get a specific league event by ID
+  Future<Map<String, dynamic>?> getLeagueEventById(String eventId) async {
+    try {
+      DocumentSnapshot eventDoc =
+          await _firestore.collection('events').doc(eventId).get();
+
+      if (!eventDoc.exists) {
+        return null;
+      }
+
+      Map<String, dynamic> eventData = eventDoc.data() as Map<String, dynamic>;
+
+      // Add ID to data
+      eventData['id'] = eventDoc.id;
+
+      return eventData;
+    } catch (e) {
+      print('Error fetching league event: $e');
+      return null;
+    }
+  }
+
+  // Get all dates for a league event
+  Future<List<DateTime>> getLeagueEventDates(String eventId) async {
+    try {
+      Map<String, dynamic>? eventData = await getLeagueEventById(eventId);
+
+      if (eventData == null || !eventData.containsKey('eventDates')) {
+        return [];
+      }
+
+      // Convert Firestore timestamps to DateTime objects
+      List<DateTime> dates = [];
+      var eventDates = eventData['eventDates'] as List<dynamic>;
+
+      for (var date in eventDates) {
+        if (date is Timestamp) {
+          dates.add(date.toDate());
+        }
+      }
+
+      return dates;
+    } catch (e) {
+      print('Error fetching league event dates: $e');
       return [];
     }
   }

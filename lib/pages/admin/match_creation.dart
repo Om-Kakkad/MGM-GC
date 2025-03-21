@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
+import '../../services/team_service.dart';
 
 class MatchCreationForm extends StatefulWidget {
   const MatchCreationForm({super.key});
@@ -14,6 +15,7 @@ class MatchCreationForm extends StatefulWidget {
 class _MatchCreationFormState extends State<MatchCreationForm> {
   final _formKey = GlobalKey<FormState>();
   final MatchService _matchService = MatchService();
+  final TeamService _teamService = TeamService();
 
   // Form state variables
   bool _isLoading = false;
@@ -22,13 +24,15 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
   List<Map<String, dynamic>> _teamBOptions = [];
   List<Map<String, dynamic>> _teamAPlayers = [];
   List<Map<String, dynamic>> _teamBPlayers = [];
+  List<DateTime> _availableDates = [];
 
   // Selected values
   String? _selectedEventId;
   String? _selectedTeamAId;
   String? _selectedTeamBId;
   String _matchType = '4-ball';
-  DateTime _matchDateTime = DateTime.now();
+  DateTime? _selectedDate;
+  TimeOfDay _selectedTime = TimeOfDay.now();
 
   // Selected players
   List<String> _selectedTeamAPlayerIds = [];
@@ -72,15 +76,25 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
       _selectedTeamBId = null;
       _teamAOptions = [];
       _teamBOptions = [];
+      _availableDates = [];
+      _selectedDate = null;
     });
 
     try {
-      print('Loading teams for event: $_selectedEventId');
+      // Load teams for the selected event
       final teams = await _matchService.getTeamsByEvent(_selectedEventId!);
 
-      print('Teams loaded: ${teams.length}');
+      // Load available dates for the selected event
+      final dates = await _teamService.getLeagueEventDates(_selectedEventId!);
+
+      setState(() {
+        _teamAOptions = teams;
+        _teamBOptions = teams;
+        _availableDates = dates;
+        _isLoading = false;
+      });
+
       if (teams.isEmpty) {
-        // Show a message if no teams are available
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -93,20 +107,26 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
         }
       }
 
-      setState(() {
-        _teamAOptions = teams;
-        _teamBOptions = teams;
-        _isLoading = false;
-      });
+      if (dates.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No dates available for this event. Please add dates to the event first.',
+              ),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     } catch (e) {
-      print('Error in _loadTeams: $e');
       setState(() {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to load teams: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load teams or dates: $e')),
+        );
       }
     }
   }
@@ -145,32 +165,30 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
     }
   }
 
-  Future<void> _selectDateTime(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? pickedTime = await showTimePicker(
       context: context,
-      initialDate: _matchDateTime,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
+      initialTime: _selectedTime,
     );
 
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_matchDateTime),
-      );
-
-      if (pickedTime != null) {
-        setState(() {
-          _matchDateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        });
-      }
+    if (pickedTime != null) {
+      setState(() {
+        _selectedTime = pickedTime;
+      });
     }
+  }
+
+  DateTime _combineDateTime() {
+    if (_selectedDate == null) {
+      return DateTime.now(); // Fallback, should not happen
+    }
+    return DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
   }
 
   bool _validatePlayerCounts() {
@@ -186,6 +204,13 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a match date')),
+        );
+        return;
+      }
+
       if (!_validatePlayerCounts()) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -235,7 +260,7 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
         print('Team B Players: $_selectedTeamBPlayerIds');
 
         // Create match with all values explicitly initialized
-        // Use defensive non-null values for everything
+        final matchDateTime = _combineDateTime();
         final match = Match(
           eventID: _selectedEventId!,
           teams: [_selectedTeamAId!, _selectedTeamBId!],
@@ -244,7 +269,7 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
             'teamB': _selectedTeamBPlayerIds,
           },
           matchType: _matchType,
-          matchDateTime: _matchDateTime,
+          matchDateTime: matchDateTime,
           holeResults: [], // Explicitly empty array
           matchStatus: 'active',
         );
@@ -415,40 +440,108 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Match Date/Time
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Match Date and Time',
-                            style: GoogleFonts.raleway(
-                              textStyle: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.normal,
-                                fontSize: 16,
+                      // Match Date (Chips)
+                      if (_availableDates.isNotEmpty) ...[
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Match Date',
+                              style: GoogleFonts.raleway(
+                                textStyle: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              DateFormat(
-                                'MMM dd, yyyy - hh:mm a',
-                              ).format(_matchDateTime),
-                              style: const TextStyle(fontSize: 16),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xffF7F7F9),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children:
+                                    _availableDates.map((date) {
+                                      final bool isSelected =
+                                          _selectedDate == date;
+                                      final DateFormat formatter = DateFormat(
+                                        'EEE, MMM d, yyyy',
+                                      );
+                                      return ChoiceChip(
+                                        label: Text(formatter.format(date)),
+                                        selected: isSelected,
+                                        selectedColor: Colors.blue,
+                                        labelStyle: TextStyle(
+                                          color:
+                                              isSelected
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                          fontWeight:
+                                              isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                        onSelected: (selected) {
+                                          setState(() {
+                                            _selectedDate =
+                                                selected ? date : null;
+                                          });
+                                        },
+                                      );
+                                    }).toList(),
+                              ),
                             ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.calendar_today),
-                              onPressed: () => _selectDateTime(context),
+                          ],
+                        ),
+
+                        // Match Time
+                        const SizedBox(height: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Match Time',
+                              style: GoogleFonts.raleway(
+                                textStyle: const TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.normal,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
-                            tileColor: const Color(0xffF7F7F9),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            const SizedBox(height: 8),
+                            InkWell(
+                              onTap: () => _selectTime(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffF7F7F9),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _selectedTime.format(context),
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    const Icon(Icons.access_time),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
 
                       const SizedBox(height: 30),
                       _buildSectionTitle('Team Selection'),
