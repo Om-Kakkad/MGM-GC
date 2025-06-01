@@ -612,13 +612,13 @@ class TestResult {
   }
 
   String get summary {
-    return 'Test ${success ? 'PASSED' : 'FAILED'}\n\n' + messages.join('\n');
+    return 'Test ${success ? 'PASSED' : 'FAILED'}\n\n${messages.join('\n')}';
   }
 }
 
 /// Test Runner Widget for UI-based testing
 class DeletionTestRunner extends StatefulWidget {
-  const DeletionTestRunner({Key? key}) : super(key: key);
+  const DeletionTestRunner({super.key});
 
   @override
   State<DeletionTestRunner> createState() => _DeletionTestRunnerState();

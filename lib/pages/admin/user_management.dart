@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../services/delete_service.dart';
 
 class UserManagementPage extends StatefulWidget {
   const UserManagementPage({super.key});
@@ -12,7 +11,6 @@ class UserManagementPage extends StatefulWidget {
 
 class _UserManagementPageState extends State<UserManagementPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final DeleteService _deleteService = DeleteService();
   bool _isLoading = false;
   List<DocumentSnapshot> _users = [];
   String? _selectedFilter = 'All Users';
@@ -53,57 +51,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading users: $e')));
-    }
-  }
-
-  Future<void> _deleteUser(String userId, String userEmail) async {
-    // Show confirmation dialog
-    final bool confirm =
-        await showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: Text('Delete User'),
-                content: Text(
-                  'Are you sure you want to delete the user "$userEmail"? This action cannot be undone and will remove all associated data.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text('Delete', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-
-    if (!confirm) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _deleteService.deleteUserWithCascade(userId);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('User deleted successfully')));
-
-      // Reload the user list
-      _loadUsers();
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error deleting user: $e')));
     }
   }
 
@@ -220,14 +167,6 @@ class _UserManagementPageState extends State<UserManagementPage> {
                                   ),
                                 ),
                               ],
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed:
-                                  () => _deleteUser(
-                                    userDoc.id,
-                                    userData['email'] ?? 'this user',
-                                  ),
                             ),
                           ),
                         );

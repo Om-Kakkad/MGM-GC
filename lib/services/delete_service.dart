@@ -387,7 +387,7 @@ class DeleteService {
       final eventData = eventDoc.data()!;
 
       // Track all matches that need to be deleted
-      Set<String> matchesToDelete = new Set<String>();
+      Set<String> matchesToDelete = <String>{};
 
       // Start by getting all teams associated with this event
       // Check for different possible field names (eventID or eventId)

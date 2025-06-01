@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
-import '../../models/user_model.dart'
-    as user_models; // Added prefix to resolve ambiguity
+// Added prefix to resolve ambiguity
 import '../../models/team.dart';
 import 'event_creation_form.dart';
-import 'package:mgm_gc/pages/admin/team_creation.dart';
 import 'package:mgm_gc/pages/admin/match_creation.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
