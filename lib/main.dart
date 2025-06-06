@@ -17,6 +17,7 @@ import 'package:mgm_gc/pages/events/event_details.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mgm_gc/pages/admin/match_management.dart';
+import 'package:mgm_gc/pages/league/join_team.dart';
 
 Future<void> createAdminAccountIfNoneExists() async {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -86,6 +87,7 @@ class MyApp extends StatelessWidget {
         '/event-management': (context) => const EventManagementPage(),
         '/match-management': (context) => const MatchManagementPage(),
         '/create-event': (context) => const EventCreationForm(),
+        '/join-team': (context) => const JoinTeamPage(), // Add new route
       },
     );
   }

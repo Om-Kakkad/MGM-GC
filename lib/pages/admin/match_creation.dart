@@ -132,6 +132,13 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
   }
 
   Future<void> _loadTeamPlayers(String teamId, bool isTeamA) async {
+    if (_selectedEventId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an event first')),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       if (isTeamA) {
@@ -144,7 +151,12 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
     });
 
     try {
-      final players = await _matchService.getPlayersByTeam(teamId);
+      // Pass the event ID to get players from the correct team
+      final players = await _matchService.getPlayersByTeam(
+        _selectedEventId!,
+        teamId,
+      );
+
       setState(() {
         if (isTeamA) {
           _teamAPlayers = players;
@@ -270,7 +282,7 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
           },
           matchType: _matchType,
           matchDateTime: matchDateTime,
-          holeResults: [], // Explicitly empty array
+          holeResults: {}, // Empty map instead of array
           matchStatus: 'active',
         );
 

@@ -217,11 +217,21 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
   }
 
   Widget _buildTeamTab() {
+    // Check if user has eventId and teamId
+    final String? eventId = _currentUser?.golfDetails.eventId;
+    final String? teamId = _currentUser?.golfDetails.teamId;
+
+    if (eventId == null || teamId == null) {
+      return const Center(child: Text('No team information available'));
+    }
+
     return FutureBuilder<DocumentSnapshot>(
       future:
           _firestore
+              .collection('events')
+              .doc(eventId)
               .collection('teams')
-              .doc(_currentUser?.golfDetails.teamId)
+              .doc(teamId)
               .get(),
       builder: (context, teamSnapshot) {
         if (teamSnapshot.connectionState == ConnectionState.waiting) {
@@ -239,10 +249,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
           stream:
               _firestore
                   .collection('users')
-                  .where(
-                    'golfDetails.teamId',
-                    isEqualTo: _currentUser?.golfDetails.teamId,
-                  )
+                  .where('golfDetails.teamId', isEqualTo: teamId)
                   .snapshots(),
           builder: (context, playersSnapshot) {
             if (playersSnapshot.connectionState == ConnectionState.waiting) {
@@ -265,7 +272,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Team: ${teamData['name'] ?? 'Unnamed Team'}',
+                            'Team: ${teamData['teamName'] ?? 'Unnamed Team'}',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -298,7 +305,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                                   ),
                                   title: Text(memberData['email'] ?? 'Unknown'),
                                   subtitle: Text(
-                                    'Handicap: ${memberData['handicap'] ?? 'N/A'}',
+                                    'Handicap: ${memberData['golfDetails']?['handicap'] ?? 'N/A'}',
                                   ),
                                 );
                               },

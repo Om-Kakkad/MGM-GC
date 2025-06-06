@@ -32,41 +32,45 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // Teams collection rules
-    match /teams/{teamId} {
-      allow read: if isAuthenticated();
-      // Allow admins full write access
-      allow create, delete: if isAdmin();
-      // Allow admins to update any field OR allow authenticated users to only update the players array
-      allow update: if isAdmin() || 
-                     (isAuthenticated() && 
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players']));
-    }
-    
     // Events collection rules
     match /events/{eventId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-    }
-    
-    // Event registrations rules
-    match /event_registrations/{registrationId} {
-      allow read: if isAuthenticated();
-      allow create: if isLeaguePlayer() || isAdmin();
-      allow update, delete: if isAdmin();
-    }
-    
-    // 4-Ball Matches rules
-    match /fourBalls/{matchId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      
+      // Teams subcollection rules
+      match /teams/{teamId} {
+        allow read: if isAuthenticated();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() || 
+                      (isAuthenticated() && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players']));
+      }
+      
+      // Matches subcollection rules
+      match /matches/{matchId} {
+        allow read: if isAuthenticated();
+        allow create, update, delete: if isAdmin();
+        
+        // Hole results subcollection rules
+        match /holeResults/{holeId} {
+          allow read: if isAuthenticated();
+          allow write: if isAdmin();
+        }
+      }
+      
+      // Event registrations subcollection rules
+      match /registrations/{registrationId} {
+        allow read: if isAuthenticated();
+        allow create: if isLeaguePlayer() || isAdmin();
+        allow update, delete: if isAdmin();
+      }
     }
     
     // Allow cascade batch deletions by admins
     match /{document=**} {
       allow read, write: if isAdmin() && 
                          (request.resource == null || 
-                          request.resource.data.keys().hasAny(['players', 'teams', 'eventId', 'userId']));
+                          request.resource.data.keys().hasAny(['players', 'teams', 'userId']));
     }
   }
 }

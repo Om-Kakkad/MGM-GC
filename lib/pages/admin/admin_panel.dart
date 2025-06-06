@@ -577,11 +577,25 @@ class _AdminPanelState extends State<AdminPanel>
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream:
-                _firestore
-                    .collection('fourBalls')
-                    .orderBy('matchDateTime', descending: true)
-                    .snapshots(),
+            // Update to fetch matches from an event
+            // For example, get the first event's matches
+            stream: _firestore
+                .collection('events')
+                .limit(1)
+                .snapshots()
+                .asyncMap((eventSnapshot) async {
+                  if (eventSnapshot.docs.isEmpty) {
+                    // Return an empty QuerySnapshot by querying a non-existent collection
+                    return await _firestore.collection('empty_collection').get();
+                  }
+                  final eventId = eventSnapshot.docs.first.id;
+                  return await _firestore
+                      .collection('events')
+                      .doc(eventId)
+                      .collection('matches')
+                      .orderBy('matchDateTime', descending: true)
+                      .get();
+                }),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -784,16 +798,33 @@ class _AdminPanelState extends State<AdminPanel>
 
     for (String teamId in teamIds) {
       try {
-        DocumentSnapshot teamDoc =
-            await _firestore.collection('teams').doc(teamId).get();
+        // Need to find the event ID for this team first,
+        // as teams are now nested under events
+        String? eventId;
+        final eventsQuery = await _firestore.collection('events').get();
 
-        if (teamDoc.exists) {
-          Map<String, dynamic> teamData =
-              teamDoc.data() as Map<String, dynamic>;
-          String teamName =
-              teamData['teamName'] ?? teamData['name'] ?? 'Unknown Team';
-          teamNames.add(teamName);
-        } else {
+        // Find which event this team belongs to
+        for (var eventDoc in eventsQuery.docs) {
+          final teamDoc =
+              await _firestore
+                  .collection('events')
+                  .doc(eventDoc.id)
+                  .collection('teams')
+                  .doc(teamId)
+                  .get();
+
+          if (teamDoc.exists) {
+            eventId = eventDoc.id;
+            Map<String, dynamic> teamData =
+                teamDoc.data() as Map<String, dynamic>;
+            String teamName =
+                teamData['teamName'] ?? teamData['name'] ?? 'Unknown Team';
+            teamNames.add(teamName);
+            break;
+          }
+        }
+
+        if (eventId == null) {
           teamNames.add('Unknown Team');
         }
       } catch (e) {
@@ -833,12 +864,37 @@ class _AdminPanelState extends State<AdminPanel>
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                _firestore.collection('fourBalls').doc(matchId).delete();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Match deleted successfully')),
-                );
+              onPressed: () async {
+                // Find which event this match belongs to
+                final eventsQuery = await _firestore.collection('events').get();
+                String? eventId;
+
+                for (var eventDoc in eventsQuery.docs) {
+                  final matchRef = _firestore
+                      .collection('events')
+                      .doc(eventDoc.id)
+                      .collection('matches')
+                      .doc(matchId);
+
+                  final matchDoc = await matchRef.get();
+                  if (matchDoc.exists) {
+                    eventId = eventDoc.id;
+                    await matchRef.delete();
+                    break;
+                  }
+                }
+
+                if (eventId != null) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Match deleted successfully')),
+                  );
+                } else {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Match not found')),
+                  );
+                }
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),

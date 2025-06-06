@@ -15,28 +15,68 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DeleteService _deleteService = DeleteService();
   bool _isLoading = false;
-  List<DocumentSnapshot> _matches = [];
+  List<Map<String, dynamic>> _matches = [];
+  String? _selectedEventId;
+  List<DocumentSnapshot> _events = [];
 
   @override
   void initState() {
     super.initState();
-    _loadMatches();
+    _loadEvents();
   }
 
-  Future<void> _loadMatches() async {
+  Future<void> _loadEvents() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final querySnapshot =
+      final eventsSnapshot = await _firestore.collection('events').get();
+      setState(() {
+        _events = eventsSnapshot.docs;
+        if (_events.isNotEmpty && _selectedEventId == null) {
+          _selectedEventId = _events.first.id;
+          _loadMatches(_selectedEventId!);
+        } else {
+          _isLoading = false;
+        }
+      });
+    } catch (e) {
+      print('Error loading events: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading events: $e')));
+    }
+  }
+
+  Future<void> _loadMatches(String eventId) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Already using the correct nested collection path
+      final matchesSnapshot =
           await _firestore
-              .collection('fourBalls')
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
               .orderBy('matchDateTime', descending: true)
               .get();
 
+      List<Map<String, dynamic>> matches = [];
+      for (var doc in matchesSnapshot.docs) {
+        Map<String, dynamic> match = doc.data() as Map<String, dynamic>;
+        match['id'] = doc.id;
+        match['eventId'] = eventId;
+        matches.add(match);
+      }
+
       setState(() {
-        _matches = querySnapshot.docs;
+        _matches = matches;
         _isLoading = false;
       });
     } catch (e) {
@@ -44,14 +84,13 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
       setState(() {
         _isLoading = false;
       });
-
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error loading matches: $e')));
     }
   }
 
-  Future<void> _deleteMatch(String matchId) async {
+  Future<void> _deleteMatch(String eventId, String matchId) async {
     final bool confirm =
         await showDialog(
           context: context,
@@ -86,13 +125,13 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
 
     try {
       // Use the deleteMatchWithCascade method from DeleteService
-      await _deleteService.deleteMatchWithCascade(matchId);
+      await _deleteService.deleteMatchWithCascade(eventId, matchId);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Match deleted successfully')),
       );
 
-      _loadMatches();
+      _loadMatches(eventId);
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -104,9 +143,16 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
     }
   }
 
-  Future<String> _getTeamName(String teamId) async {
+  Future<String> _getTeamName(String eventId, String teamId) async {
     try {
-      final doc = await _firestore.collection('teams').doc(teamId).get();
+      final doc =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('teams')
+              .doc(teamId)
+              .get();
+
       if (doc.exists) {
         final data = doc.data()!;
         return data['teamName'] ?? data['name'] ?? 'Unknown Team';
@@ -170,10 +216,12 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                         ),
                         ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/create-match',
-                            ).then((_) => _loadMatches());
+                            Navigator.pushNamed(context, '/create-match').then(
+                              (_) =>
+                                  _selectedEventId != null
+                                      ? _loadMatches(_selectedEventId!)
+                                      : null,
+                            );
                           },
                           icon: const Icon(Icons.add),
                           label: const Text('Create Match'),
@@ -187,9 +235,50 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                       ],
                     ),
                   ),
+
+                  // Event selector
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Select Event',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      value: _selectedEventId,
+                      items:
+                          _events.map((event) {
+                            final data = event.data() as Map<String, dynamic>;
+                            final name =
+                                data['eventName'] ??
+                                data['name'] ??
+                                'Unnamed Event';
+                            return DropdownMenuItem<String>(
+                              value: event.id,
+                              child: Text(name),
+                            );
+                          }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedEventId = value;
+                          });
+                          _loadMatches(value);
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   Expanded(
                     child:
-                        _matches.isEmpty
+                        _selectedEventId == null
+                            ? const Center(
+                              child: Text('Please select an event'),
+                            )
+                            : _matches.isEmpty
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -226,9 +315,9 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                               padding: const EdgeInsets.all(16),
                               itemCount: _matches.length,
                               itemBuilder: (context, index) {
-                                final matchDoc = _matches[index];
-                                final matchData =
-                                    matchDoc.data() as Map<String, dynamic>;
+                                final matchData = _matches[index];
+                                final matchId = matchData['id'];
+                                final eventId = matchData['eventId'];
 
                                 // Format date
                                 final DateTime matchDate =
@@ -251,7 +340,9 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
 
                                 return FutureBuilder<List<String>>(
                                   future: Future.wait(
-                                    teamIds.map((id) => _getTeamName(id)),
+                                    teamIds.map(
+                                      (id) => _getTeamName(eventId, id),
+                                    ),
                                   ),
                                   builder: (context, snapshot) {
                                     final String teamsDisplay =
@@ -392,7 +483,8 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                                                   ),
                                                   onPressed:
                                                       () => _deleteMatch(
-                                                        matchDoc.id,
+                                                        eventId,
+                                                        matchId,
                                                       ),
                                                 ),
                                               ],
@@ -409,7 +501,11 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                 ],
               ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _loadMatches,
+        onPressed:
+            () =>
+                _selectedEventId != null
+                    ? _loadMatches(_selectedEventId!)
+                    : _loadEvents(),
         backgroundColor: const Color(0xff0D6EFD),
         child: const Icon(Icons.refresh),
       ),

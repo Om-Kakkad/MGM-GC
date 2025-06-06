@@ -80,6 +80,29 @@ class _RegistrationPageState extends State<RegistrationPage> {
         _isLoading = true;
       });
 
+      String? eventId;
+      // If playing in league and selected a team, try to find the event ID
+      if (_playingInLeague && _selectedTeamId != null) {
+        final eventsSnapshot =
+            await FirebaseFirestore.instance.collection('events').get();
+
+        for (var eventDoc in eventsSnapshot.docs) {
+          final currentEventId = eventDoc.id;
+          final teamDoc =
+              await FirebaseFirestore.instance
+                  .collection('events')
+                  .doc(currentEventId)
+                  .collection('teams')
+                  .doc(_selectedTeamId)
+                  .get();
+
+          if (teamDoc.exists) {
+            eventId = currentEventId;
+            break;
+          }
+        }
+      }
+
       // Create Golf Details
       final golfDetails = GolfDetails(
         handicap:
@@ -94,13 +117,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
             _playingInLeague && _selectedTeamId != null
                 ? await _getTeamName(_selectedTeamId!)
                 : null,
+        eventId: eventId, // Include the event ID
       );
 
       // Create User Model
       final userModel = UserModel(
         uid: widget.user.uid,
         email: widget.user.email ?? '',
-        role: 'user', // Add the missing role parameter
+        role: 'user',
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         dateOfBirth: _selectedDate ?? DateTime.now(),
@@ -126,20 +150,34 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   Future<String?> _getTeamName(String teamId) async {
     try {
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('teams')
-              .doc(teamId)
-              .get();
+      // Search for team across all events
+      final eventsSnapshot =
+          await FirebaseFirestore.instance.collection('events').get();
 
-      // Check for both possible field names (teamName and name)
-      Map<String, dynamic>? data = doc.data();
-      if (data != null) {
-        // First try teamName, then fall back to name
-        return data['teamName'] ?? data['name'] as String?;
+      for (var eventDoc in eventsSnapshot.docs) {
+        final eventId = eventDoc.id;
+        final teamDoc =
+            await FirebaseFirestore.instance
+                .collection('events')
+                .doc(eventId)
+                .collection('teams')
+                .doc(teamId)
+                .get();
+
+        if (teamDoc.exists) {
+          // Check for both possible field names (teamName and name)
+          Map<String, dynamic>? data = teamDoc.data();
+          if (data != null) {
+            // First try teamName, then fall back to name
+            return data['teamName'] ?? data['name'] as String?;
+          }
+          break; // Found the team, no need to continue checking
+        }
       }
+
       return null;
     } catch (e) {
+      print("Error getting team name: $e");
       return null;
     }
   }

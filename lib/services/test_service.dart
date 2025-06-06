@@ -116,15 +116,12 @@ class TestService {
           .add({
             'eventName': 'Test League Event',
             'eventType': 'League',
-            'eventDescription':
-                'This is an automatically generated test league event',
+            'eventDescription': 'This is a test league event for development',
             'eventDates': [
               Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
               Timestamp.fromDate(DateTime.now().add(const Duration(days: 14))),
               Timestamp.fromDate(DateTime.now().add(const Duration(days: 21))),
             ],
-            'scoringType': 'Stroke Play',
-            'teamIDs': [],
             'createdAt': FieldValue.serverTimestamp(),
           });
 
@@ -136,6 +133,8 @@ class TestService {
 
       for (int i = 0; i < teamNames.length; i++) {
         final DocumentReference teamRef = await _firestore
+            .collection('events')
+            .doc(eventId)
             .collection('teams')
             .add({
               'teamName': teamNames[i],
@@ -150,7 +149,24 @@ class TestService {
       // Update event with team IDs
       await eventRef.update({'teamIDs': teamIds});
 
-      // 3. Create test users in Firestore only (no Auth accounts)
+      // 3. Create a test match between the teams
+      final DocumentReference matchRef = await _firestore
+          .collection('events')
+          .doc(eventId)
+          .collection('matches')
+          .add({
+            'teams': teamIds,
+            'players': {'teamA': [], 'teamB': []},
+            'matchType': '4-ball',
+            'matchDateTime': Timestamp.fromDate(
+              DateTime.now().add(const Duration(days: 7)),
+            ),
+            'matchStatus': 'active',
+            'holeResults': {},
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
+      // 4. Create test users in Firestore only (no Auth accounts)
       // For each team, create 2 players
       for (int teamIndex = 0; teamIndex < teamIds.length; teamIndex++) {
         for (int playerNum = 1; playerNum <= 2; playerNum++) {
@@ -210,8 +226,8 @@ class TestService {
 
       return TestOperationResult(
         success: true,
-        message:
-            "Test data created successfully in Firestore. Note: No Firebase Auth accounts were created.",
+        message: 'Test data created successfully',
+        data: {'eventId': eventId, 'teamIds': teamIds, 'matchId': matchRef.id},
       );
     } catch (e) {
       print('Error in createTestData: $e');

@@ -7,21 +7,20 @@ class TeamService {
   // Create a new team
   Future<String> createTeam(Team team) async {
     try {
-      // Create the team document - using 'teams' instead of 'Teams'
-      DocumentReference teamRef = await _firestore.collection('teams').add({
-        'teamName': team.teamName,
-        'teamPassword': team.teamPassword,
-        'eventID': team.eventID,
-        'players': team.players,
-      });
+      // Create the team document as a subcollection of events
+      DocumentReference teamRef = await _firestore
+          .collection('events')
+          .doc(team.eventID)
+          .collection('teams')
+          .add({
+            'teamName': team.teamName,
+            'teamPassword': team.teamPassword,
+            'players': team.players,
+            // No need to store eventID in the team document since it's already nested
+          });
 
       // Update the team with its ID
       await teamRef.update({'teamID': teamRef.id});
-
-      // Update the event document to include this team
-      await _firestore.collection('events').doc(team.eventID).update({
-        'teamIDs': FieldValue.arrayUnion([teamRef.id]),
-      });
 
       return teamRef.id;
     } catch (e) {
@@ -35,19 +34,7 @@ class TeamService {
     try {
       print("Fetching league events..."); // Debug print
 
-      // First check what events are available
-      QuerySnapshot allEvents = await _firestore.collection('events').get();
-      print("Total events found: ${allEvents.docs.length}");
-
-      // Debug all events
-      for (var doc in allEvents.docs) {
-        var data = doc.data() as Map<String, dynamic>;
-        print(
-          "Event ID: ${doc.id}, Type: ${data['eventType']}, Name: ${data['eventName'] ?? data['name']}",
-        );
-      }
-
-      // Try the actual query with case-insensitive comparison
+      // Query all events
       QuerySnapshot snapshot = await _firestore.collection('events').get();
 
       print("Found ${snapshot.docs.length} events total"); // Debug print
@@ -132,6 +119,33 @@ class TeamService {
       return dates;
     } catch (e) {
       print('Error fetching league event dates: $e');
+      return [];
+    }
+  }
+
+  // Get teams by event ID - Make sure we're accessing the nested collection
+  Future<List<Map<String, dynamic>>> getTeamsByEventId(String eventId) async {
+    try {
+      print('Fetching teams for event ID: $eventId');
+
+      final QuerySnapshot snapshot =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('teams')
+              .get();
+
+      print('Found ${snapshot.docs.length} teams for event $eventId');
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          'teamName': data['teamName'] ?? data['name'] ?? 'Unnamed Team',
+        };
+      }).toList();
+    } catch (e) {
+      print('Error getting teams for event: $e');
       return [];
     }
   }

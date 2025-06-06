@@ -88,7 +88,8 @@ class GolfDetails {
   final bool playingInLeague;
   final String? teamId;
   final String? teamName;
-  final String? bracket; // New field to store player's bracket
+  final String? eventId; // Field to store event ID
+  final String? bracket; // Field to store player's bracket
 
   const GolfDetails({
     this.handicap,
@@ -97,7 +98,8 @@ class GolfDetails {
     this.playingInLeague = false,
     this.teamId,
     this.teamName,
-    this.bracket, // Added bracket parameter
+    this.eventId,
+    this.bracket,
   });
 
   Map<String, dynamic> toMap() {
@@ -108,7 +110,8 @@ class GolfDetails {
       'playingInLeague': playingInLeague,
       'teamId': teamId,
       'teamName': teamName,
-      'bracket': bracket, // Added bracket to map
+      'eventId': eventId,
+      'bracket': bracket,
     };
   }
 
@@ -120,7 +123,8 @@ class GolfDetails {
       playingInLeague: map['playingInLeague'] ?? false,
       teamId: map['teamId'],
       teamName: map['teamName'],
-      bracket: map['bracket'], // Read bracket from map
+      eventId: map['eventId'],
+      bracket: map['bracket'],
     );
   }
 }
@@ -129,20 +133,28 @@ class Team {
   final String id;
   final String name;
   final String password;
+  final String eventId; // Event ID this team belongs to
 
-  Team({required this.id, required this.name, required this.password});
+  Team({
+    required this.id,
+    required this.name,
+    required this.password,
+    required this.eventId,
+  });
 
   Map<String, dynamic> toMap() {
-    return {'id': id, 'name': name, 'password': password};
+    return {'id': id, 'name': name, 'password': password, 'eventId': eventId};
   }
 
   factory Team.fromMap(Map<String, dynamic> map) {
     return Team(
       id: map['id'] ?? '',
-      // Check for both field name possibilities (teamName from new teams or name from older teams)
+      // Check for both field name possibilities
       name: map['teamName'] ?? map['name'] ?? '',
       // Check for both password field names
       password: map['teamPassword'] ?? map['password'] ?? '',
+      // Get the event ID
+      eventId: map['eventID'] ?? map['eventId'] ?? '',
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mgm_gc/services/team_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mgm_gc/models/team.dart';
 
 class TeamCreationForm extends StatefulWidget {
   const TeamCreationForm({super.key});
@@ -80,17 +81,19 @@ class _TeamCreationFormState extends State<TeamCreationForm> {
           return;
         }
 
-        // Create the team with eventId
-        final teamRef = await _firestore.collection('teams').add({
-          'teamName': _teamNameController.text,
-          'password': _teamPasswordController.text,
-          'eventId': _selectedEventId, // Store the event ID reference
-          'createdAt': FieldValue.serverTimestamp(),
-          'players': [], // Initialize empty players array
-        });
+        // Create a Team object
+        final team = Team(
+          teamName: _teamNameController.text,
+          teamPassword: _teamPasswordController.text,
+          eventID: _selectedEventId!,
+          players: [],
+        );
+
+        // Create the team using the service
+        final teamId = await _teamService.createTeam(team);
 
         print(
-          'Created team with ID: ${teamRef.id}, linked to event: $_selectedEventId',
+          'Created team with ID: $teamId, linked to event: $_selectedEventId',
         );
 
         _teamNameController.clear();

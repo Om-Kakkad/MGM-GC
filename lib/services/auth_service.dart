@@ -132,18 +132,60 @@ class AuthService {
       if (user.golfDetails.playingInLeague &&
           user.golfDetails.teamId != null &&
           teamPassword != null) {
-        final teamDoc =
-            await _firestore
-                .collection('teams')
-                .doc(user.golfDetails.teamId)
-                .get();
+        // We need to find which event this team belongs to
+        // Query all events and their team subcollections
+        final eventsSnapshot = await _firestore.collection('events').get();
+        DocumentSnapshot? teamDoc;
+        String? eventId;
 
-        final teamData = teamDoc.data();
+        // Search through each event's teams subcollection
+        for (var eventDoc in eventsSnapshot.docs) {
+          final currentEventId = eventDoc.id;
+          final teamRef = _firestore
+              .collection('events')
+              .doc(currentEventId)
+              .collection('teams')
+              .doc(user.golfDetails.teamId);
+
+          final tempTeamDoc = await teamRef.get();
+
+          if (tempTeamDoc.exists) {
+            teamDoc = tempTeamDoc;
+            eventId = currentEventId;
+            break;
+          }
+        }
+
+        if (teamDoc == null || !teamDoc.exists) {
+          Fluttertoast.showToast(
+            msg: "Team not found",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.SNACKBAR,
+            backgroundColor: Colors.black54,
+            textColor: Colors.white,
+            fontSize: 14.0,
+          );
+          return false;
+        }
+
+        final teamData = teamDoc.data() as Map<String, dynamic>?;
+        if (teamData == null) {
+          Fluttertoast.showToast(
+            msg: "Invalid team data",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.SNACKBAR,
+            backgroundColor: Colors.black54,
+            textColor: Colors.white,
+            fontSize: 14.0,
+          );
+          return false;
+        }
+
         // Check both possible password field names
         final correctPassword =
-            teamData?['teamPassword'] ?? teamData?['password'];
+            teamData['teamPassword'] ?? teamData['password'];
 
-        if (!teamDoc.exists || correctPassword != teamPassword) {
+        if (correctPassword != teamPassword) {
           Fluttertoast.showToast(
             msg: "Incorrect team password",
             toastLength: Toast.LENGTH_LONG,
@@ -156,13 +198,12 @@ class AuthService {
         }
 
         // If the team password is correct, update the role to league_player
-        if (correctPassword == teamPassword) {
+        if (correctPassword == teamPassword && eventId != null) {
           // Get the associated event for the team to determine brackets
-          final String? eventId = teamData?['eventId'];
           String? assignedBracket;
 
-          // Try to determine the player's bracket if they have a handicap and the team has an associated event
-          if (eventId != null && user.golfDetails.handicap != null) {
+          // Try to determine the player's bracket if they have a handicap
+          if (user.golfDetails.handicap != null) {
             // Fetch the event document to get bracket definitions
             final eventDoc =
                 await _firestore.collection('events').doc(eventId).get();
@@ -219,6 +260,7 @@ class AuthService {
               playingInLeague: user.golfDetails.playingInLeague,
               teamId: user.golfDetails.teamId,
               teamName: user.golfDetails.teamName,
+              eventId: eventId, // Store event ID in user's golf details
               bracket: assignedBracket, // Add bracket assignment
             ),
             createdAt: user.createdAt,
@@ -233,6 +275,8 @@ class AuthService {
 
           // Add the user to the team's players array
           await _firestore
+              .collection('events')
+              .doc(eventId)
               .collection('teams')
               .doc(user.golfDetails.teamId)
               .update({
@@ -270,14 +314,42 @@ class AuthService {
     }
   }
 
-  // Get teams for dropdown
+  // Get teams for dropdown - updated to handle nested collections
   Stream<List<Team>> getTeams() {
-    return _firestore.collection('teams').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return Team.fromMap(data);
-      }).toList();
+    // First get all events
+    return _firestore.collection('events').snapshots().asyncMap((
+      eventSnapshot,
+    ) async {
+      List<Team> allTeams = [];
+
+      // For each event, get its teams subcollection
+      for (var eventDoc in eventSnapshot.docs) {
+        final eventId = eventDoc.id;
+        final teamsSnapshot =
+            await _firestore
+                .collection('events')
+                .doc(eventId)
+                .collection('teams')
+                .get();
+
+        // Convert each team doc to a Team object
+        for (var doc in teamsSnapshot.docs) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          data['eventId'] = eventId; // Add event ID to the data
+
+          allTeams.add(
+            Team(
+              id: doc.id,
+              name: data['teamName'] ?? data['name'] ?? 'Unnamed Team',
+              password: data['teamPassword'] ?? data['password'] ?? '',
+              eventId: eventId,
+            ),
+          );
+        }
+      }
+
+      return allTeams;
     });
   }
 

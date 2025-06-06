@@ -18,24 +18,70 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
   final TeamService _teamService = TeamService();
   bool _isLoading = false;
   List<Team> _teams = [];
+  String? _selectedEventId;
+  List<DocumentSnapshot> _events = [];
 
   @override
   void initState() {
     super.initState();
-    _loadTeams();
+    _loadEvents();
   }
 
-  Future<void> _loadTeams() async {
+  Future<void> _loadEvents() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final querySnapshot = await _firestore.collection('teams').get();
+      // Load all events
+      final eventsSnapshot = await _firestore.collection('events').get();
+
+      setState(() {
+        _events = eventsSnapshot.docs;
+        if (_events.isNotEmpty && _selectedEventId == null) {
+          _selectedEventId = _events.first.id;
+          _loadTeams(_selectedEventId!);
+        } else {
+          _isLoading = false;
+        }
+      });
+    } catch (e) {
+      print('Error loading events: $e');
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading events: $e')));
+    }
+  }
+
+  Future<void> _loadTeams(String eventId) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get teams from the subcollection of the event
+      final querySnapshot =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('teams')
+              .get();
 
       final teams =
           querySnapshot.docs.map((doc) {
-            return Team.fromFirestore(doc);
+            Map<String, dynamic> data = doc.data();
+            // Create Team object with this team's data
+            return Team(
+              teamID: doc.id,
+              teamName: data['teamName'] ?? '',
+              teamPassword: data['teamPassword'] ?? '',
+              eventID: eventId, // Use the event ID we're querying
+              players: List<String>.from(data['players'] ?? []),
+            );
           }).toList();
 
       setState(() {
@@ -54,7 +100,7 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
     }
   }
 
-  Future<void> _deleteTeam(String teamId) async {
+  Future<void> _deleteTeam(String eventId, String teamId) async {
     final bool confirm =
         await showDialog(
           context: context,
@@ -88,13 +134,14 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
     });
 
     try {
-      await _deleteService.deleteTeamWithCascade(teamId);
+      // Use the updated deleteTeamWithCascade method that handles nested collections
+      await _deleteService.deleteTeamWithCascade(eventId, teamId);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Team deleted successfully')),
       );
 
-      _loadTeams();
+      _loadTeams(eventId);
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -145,10 +192,12 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                         ),
                         ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/create-team',
-                            ).then((_) => _loadTeams());
+                            Navigator.pushNamed(context, '/create-team').then(
+                              (_) =>
+                                  _selectedEventId != null
+                                      ? _loadTeams(_selectedEventId!)
+                                      : null,
+                            );
                           },
                           icon: const Icon(Icons.add),
                           label: const Text('Create Team'),
@@ -163,9 +212,49 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                     ),
                   ),
 
+                  // Event selector dropdown
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Select Event',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      value: _selectedEventId,
+                      items:
+                          _events.map((event) {
+                            final data = event.data() as Map<String, dynamic>;
+                            final name =
+                                data['eventName'] ??
+                                data['name'] ??
+                                'Unnamed Event';
+                            return DropdownMenuItem<String>(
+                              value: event.id,
+                              child: Text(name),
+                            );
+                          }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedEventId = value;
+                          });
+                          _loadTeams(value);
+                        }
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   Expanded(
                     child:
-                        _teams.isEmpty
+                        _selectedEventId == null
+                            ? const Center(
+                              child: Text('Please select an event'),
+                            )
+                            : _teams.isEmpty
                             ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -237,8 +326,10 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                                                 color: Colors.red,
                                               ),
                                               onPressed:
-                                                  () =>
-                                                      _deleteTeam(team.teamID!),
+                                                  () => _deleteTeam(
+                                                    team.eventID,
+                                                    team.teamID!,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -252,13 +343,6 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                                         const SizedBox(height: 4),
                                         Text(
                                           'Password: ${team.teamPassword}',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'Event ID: ${team.eventID}',
                                           style: const TextStyle(
                                             color: Colors.grey,
                                           ),
@@ -299,7 +383,11 @@ class _TeamManagementPageState extends State<TeamManagementPage> {
                 ],
               ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _loadTeams,
+        onPressed:
+            () =>
+                _selectedEventId != null
+                    ? _loadTeams(_selectedEventId!)
+                    : _loadEvents(),
         backgroundColor: const Color(0xff0D6EFD),
         child: const Icon(Icons.refresh),
       ),

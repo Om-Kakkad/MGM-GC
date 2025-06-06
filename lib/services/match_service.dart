@@ -24,37 +24,20 @@ class MatchService {
     }
   }
 
-  // Get teams by event ID - Fix this method to properly query teams
+  // Get teams by event ID from the nested collection
   Future<List<Map<String, dynamic>>> getTeamsByEvent(String eventId) async {
     try {
       print('Fetching teams for event ID: $eventId');
 
-      // Query teams where eventId field matches the provided event ID
+      // Query teams subcollection in the event
       final QuerySnapshot snapshot =
           await _firestore
+              .collection('events')
+              .doc(eventId)
               .collection('teams')
-              .where('eventId', isEqualTo: eventId)
               .get();
 
       print('Found ${snapshot.docs.length} teams for event $eventId');
-
-      // If no teams are found with the eventId field, try querying all teams
-      // This is a fallback measure in case teams were created without eventId
-      if (snapshot.docs.isEmpty) {
-        print(
-          'No teams found with eventId field, fetching all teams as fallback',
-        );
-        final QuerySnapshot allTeamsSnapshot =
-            await _firestore.collection('teams').get();
-
-        return allTeamsSnapshot.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return {
-            'id': doc.id,
-            'teamName': data['teamName'] ?? data['name'] ?? 'Unnamed Team',
-          };
-        }).toList();
-      }
 
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -69,11 +52,19 @@ class MatchService {
     }
   }
 
-  // Get players by team ID
-  Future<List<Map<String, dynamic>>> getPlayersByTeam(String teamId) async {
+  // Get players by team ID - updated for nested collections
+  Future<List<Map<String, dynamic>>> getPlayersByTeam(
+    String eventId,
+    String teamId,
+  ) async {
     try {
       DocumentSnapshot teamDoc =
-          await _firestore.collection('teams').doc(teamId).get();
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('teams')
+              .doc(teamId)
+              .get();
 
       if (!teamDoc.exists) {
         throw Exception('Team not found');
@@ -115,7 +106,6 @@ class MatchService {
       // CRITICAL: Convert all complex objects to simple serializable types
       // This avoids any unexpected Firebase serialization issues
       final Map<String, dynamic> safeMap = {
-        'eventID': match.eventID,
         'teams': List<String>.from(match.teams),
         'players': Map<String, dynamic>.from(
           match.players.map(
@@ -124,8 +114,9 @@ class MatchService {
         ),
         'matchType': match.matchType,
         'matchDateTime': Timestamp.fromDate(match.matchDateTime),
-        'holeResults': [], // Always use empty array, not null
         'matchStatus': match.matchStatus,
+        // Convert holeResults from array to map
+        'holeResults': {}, // Initialize empty map
       };
 
       // Add matchID if it exists
@@ -143,7 +134,12 @@ class MatchService {
       print('Adding document to Firestore...');
       DocumentReference? docRef;
       try {
-        docRef = await _firestore.collection('fourBalls').add(safeMap);
+        docRef = await _firestore
+            .collection('events')
+            .doc(match.eventID)
+            .collection('matches')
+            .add(safeMap);
+
         print('Match added with generated ID: ${docRef.id}');
 
         // Return early with ID to avoid any issues with the update
@@ -161,8 +157,8 @@ class MatchService {
         }
 
         // Update teams and players with the matchId
-        await _updateTeamsWithMatch(match.teams, matchId);
-        await _updatePlayersWithMatch(match.players, matchId);
+        await _updateTeamsWithMatch(match.eventID, match.teams, matchId);
+        await _updatePlayersWithMatch(match.eventID, match.players, matchId);
 
         return matchId;
       } catch (e) {
@@ -176,14 +172,45 @@ class MatchService {
     }
   }
 
+  // Update hole results with a map-based structure
+  Future<void> updateHoleResult(
+    String eventId,
+    String matchId,
+    int holeNumber,
+    Map<String, dynamic> holeData,
+  ) async {
+    try {
+      // Create hole key (e.g., "hole_1", "hole_2")
+      String holeKey = 'hole_${holeNumber}';
+
+      // Update match document with new hole result
+      await _firestore
+          .collection('events')
+          .doc(eventId)
+          .collection('matches')
+          .doc(matchId)
+          .update({'holeResults.$holeKey': holeData});
+
+      print('Updated hole result for hole $holeNumber');
+    } catch (e) {
+      print('Error updating hole result: $e');
+      rethrow;
+    }
+  }
+
   // Update team documents with matchId
   Future<void> _updateTeamsWithMatch(
+    String eventId,
     List<String> teamIds,
     String matchId,
   ) async {
     try {
       for (String teamId in teamIds) {
-        DocumentReference teamRef = _firestore.collection('teams').doc(teamId);
+        DocumentReference teamRef = _firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('teams')
+            .doc(teamId);
         DocumentSnapshot teamDoc = await teamRef.get();
 
         if (teamDoc.exists) {
@@ -214,6 +241,7 @@ class MatchService {
 
   // Update player documents with matchId
   Future<void> _updatePlayersWithMatch(
+    String eventId,
     Map<String, List<String>> players,
     String matchId,
   ) async {
@@ -244,7 +272,10 @@ class MatchService {
           // Add matchId if it doesn't exist already
           if (!matches.contains(matchId)) {
             matches.add(matchId);
-            await playerRef.update({'matches': matches});
+            await playerRef.update({
+              'matches': matches,
+              'golfDetails.eventId': eventId, // Store event ID in user document
+            });
             print('Updated player $playerId with match $matchId');
           }
         } else {
@@ -254,6 +285,64 @@ class MatchService {
     } catch (e) {
       print('Error updating players with match: $e');
       // Don't throw, just log the error to avoid breaking match creation
+    }
+  }
+
+  // Get match by ID
+  Future<Map<String, dynamic>?> getMatchById(
+    String eventId,
+    String matchId,
+  ) async {
+    try {
+      DocumentSnapshot matchDoc =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
+              .doc(matchId)
+              .get();
+
+      if (!matchDoc.exists) {
+        return null;
+      }
+
+      Map<String, dynamic> matchData = matchDoc.data() as Map<String, dynamic>;
+      matchData['id'] = matchDoc.id;
+
+      return matchData;
+    } catch (e) {
+      print('Error getting match: $e');
+      return null;
+    }
+  }
+
+  // Get all matches for an event
+  Future<List<Map<String, dynamic>>> getMatchesByEventId(String eventId) async {
+    try {
+      print('Fetching matches for event ID: $eventId');
+
+      final QuerySnapshot snapshot =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
+              .orderBy('matchDateTime', descending: true)
+              .get();
+
+      print('Found ${snapshot.docs.length} matches for event $eventId');
+
+      List<Map<String, dynamic>> matches = [];
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> match = doc.data() as Map<String, dynamic>;
+        match['id'] = doc.id;
+        match['eventId'] = eventId;
+        matches.add(match);
+      }
+
+      return matches;
+    } catch (e) {
+      print('Error getting matches for event: $e');
+      return [];
     }
   }
 }
