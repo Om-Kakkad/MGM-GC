@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/match_model.dart';
 
 class CollectionUtils {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -43,5 +44,17 @@ class CollectionUtils {
     }
 
     return null;
+  }
+
+  /// Create a match in the correct subcollection
+  static Future<DocumentReference> createMatchInEvent(
+    String eventId,
+    Match match,
+  ) async {
+    return await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .add(match.toMap());
   }
 }

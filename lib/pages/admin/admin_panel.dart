@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+// Added import for CollectionUtils
+import '../../utils/collection_utils.dart';
 // Added prefix to resolve ambiguity
 import '../../models/team.dart';
 import 'event_creation_form.dart';
@@ -579,23 +581,21 @@ class _AdminPanelState extends State<AdminPanel>
           child: StreamBuilder<QuerySnapshot>(
             // Update to fetch matches from an event
             // For example, get the first event's matches
-            stream: _firestore
-                .collection('events')
-                .limit(1)
-                .snapshots()
-                .asyncMap((eventSnapshot) async {
-                  if (eventSnapshot.docs.isEmpty) {
-                    // Return an empty QuerySnapshot by querying a non-existent collection
-                    return await _firestore.collection('empty_collection').get();
-                  }
-                  final eventId = eventSnapshot.docs.first.id;
-                  return await _firestore
-                      .collection('events')
-                      .doc(eventId)
-                      .collection('matches')
-                      .orderBy('matchDateTime', descending: true)
-                      .get();
-                }),
+            stream: _firestore.collection('events').limit(1).snapshots().asyncMap((
+              eventSnapshot,
+            ) async {
+              if (eventSnapshot.docs.isEmpty) {
+                // Return an empty QuerySnapshot by querying a non-existent collection
+                return await _firestore.collection('empty_collection').get();
+              }
+              final eventId = eventSnapshot.docs.first.id;
+              return await _firestore
+                  .collection('events')
+                  .doc(eventId)
+                  .collection('matches')
+                  .orderBy('matchDateTime', descending: true)
+                  .get();
+            }),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -800,31 +800,27 @@ class _AdminPanelState extends State<AdminPanel>
       try {
         // Need to find the event ID for this team first,
         // as teams are now nested under events
-        String? eventId;
-        final eventsQuery = await _firestore.collection('events').get();
+        String? eventId = await CollectionUtils.findEventIdForTeam(teamId);
 
-        // Find which event this team belongs to
-        for (var eventDoc in eventsQuery.docs) {
+        if (eventId != null) {
           final teamDoc =
               await _firestore
                   .collection('events')
-                  .doc(eventDoc.id)
+                  .doc(eventId)
                   .collection('teams')
                   .doc(teamId)
                   .get();
 
           if (teamDoc.exists) {
-            eventId = eventDoc.id;
             Map<String, dynamic> teamData =
                 teamDoc.data() as Map<String, dynamic>;
             String teamName =
                 teamData['teamName'] ?? teamData['name'] ?? 'Unknown Team';
             teamNames.add(teamName);
-            break;
+          } else {
+            teamNames.add('Unknown Team');
           }
-        }
-
-        if (eventId == null) {
+        } else {
           teamNames.add('Unknown Team');
         }
       } catch (e) {
@@ -865,35 +861,43 @@ class _AdminPanelState extends State<AdminPanel>
             ),
             TextButton(
               onPressed: () async {
-                // Find which event this match belongs to
-                final eventsQuery = await _firestore.collection('events').get();
-                String? eventId;
+                try {
+                  // Find which event this match belongs to
+                  String? eventId = await CollectionUtils.findEventIdForMatch(
+                    matchId,
+                  );
 
-                for (var eventDoc in eventsQuery.docs) {
-                  final matchRef = _firestore
-                      .collection('events')
-                      .doc(eventDoc.id)
-                      .collection('matches')
-                      .doc(matchId);
+                  if (eventId != null) {
+                    await _firestore
+                        .collection('events')
+                        .doc(eventId)
+                        .collection('matches')
+                        .doc(matchId)
+                        .delete();
 
-                  final matchDoc = await matchRef.get();
-                  if (matchDoc.exists) {
-                    eventId = eventDoc.id;
-                    await matchRef.delete();
-                    break;
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Match deleted successfully'),
+                        ),
+                      );
+                    }
+                  } else {
+                    if (mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Match not found')),
+                      );
+                    }
                   }
-                }
-
-                if (eventId != null) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Match deleted successfully')),
-                  );
-                } else {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Match not found')),
-                  );
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error deleting match: $e')),
+                    );
+                  }
                 }
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),

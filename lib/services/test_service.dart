@@ -4,8 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 class TestOperationResult {
   final bool success;
   final String message;
+  final Map<String, dynamic>? data; // Added missing data field
 
-  TestOperationResult({required this.success, required this.message});
+  TestOperationResult({
+    required this.success,
+    required this.message,
+    this.data,
+  });
 }
 
 class TestService {
@@ -69,6 +74,28 @@ class TestService {
           await _firestore.collection('fourBalls').get();
       for (final doc in matchesSnapshot.docs) {
         await _firestore.collection('fourBalls').doc(doc.id).delete();
+      }
+
+      // Also check for matches in event subcollections
+      // Changed variable name to avoid duplication
+      final eventDocs = await _firestore.collection('events').get();
+      for (final eventDoc in eventDocs.docs) {
+        final eventId = eventDoc.id;
+        final eventMatchesSnapshot =
+            await _firestore
+                .collection('events')
+                .doc(eventId)
+                .collection('matches')
+                .get();
+
+        for (final matchDoc in eventMatchesSnapshot.docs) {
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
+              .doc(matchDoc.id)
+              .delete();
+        }
       }
 
       // Note: We can't programmatically delete other Firebase Auth users
