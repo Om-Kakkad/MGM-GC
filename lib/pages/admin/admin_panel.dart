@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../services/auth_service.dart';
 // Added import for CollectionUtils
 import '../../utils/collection_utils.dart';
@@ -23,6 +24,7 @@ class _AdminPanelState extends State<AdminPanel>
   late TabController _tabController;
   final TeamService _teamService = TeamService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
   final AuthService _authService = AuthService();
   final int _currentIndex = 0;
   final bool _isLoading = false;
@@ -255,10 +257,16 @@ class _AdminPanelState extends State<AdminPanel>
                         child: const Text('Set as Admin'),
                       ),
                     ],
-                onSelected: (value) {
-                  _firestore.collection('users').doc(userId).update({
-                    'role': value,
-                  });
+                onSelected: (value) async {
+                  try {
+                    await _functions
+                        .httpsCallable('setUserRole')
+                        .call({'uid': userId, 'role': value});
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error updating role: \$e')),
+                    );
+                  }
                 },
               ),
             );

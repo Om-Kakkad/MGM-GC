@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TeamRequestsPage extends StatelessWidget {
   const TeamRequestsPage({super.key});
+
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +167,18 @@ class TeamRequestsPage extends StatelessWidget {
 
       // Commit the batch
       await batch.commit();
+
+      // Update role using Cloud Function to ensure Admin SDK verification
+      try {
+        await _functions
+            .httpsCallable('setUserRole')
+            .call({'uid': userId, 'role': 'league_player'});
+      } catch (e) {
+        // If the cloud function fails, notify but continue
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error setting role: \$e')),
+        );
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Request approved successfully')),
