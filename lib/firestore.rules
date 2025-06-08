@@ -27,7 +27,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isAdmin() ||
+                     (isOwner(userId) &&
+                      request.resource.data.role == resource.data.role);
       // Allow admins to delete users
       allow delete: if isAdmin();
     }
