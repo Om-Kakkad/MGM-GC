@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mgm_gc/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:mgm_gc/pages/login/login.dart';
 import 'package:mgm_gc/pages/signup/signup.dart';
 import 'package:mgm_gc/pages/home/home_page.dart';
@@ -58,8 +59,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  if (kDebugMode) {
+    FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+    FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+  }
+
   // Create admin account if none exists
-  //await createAdminAccountIfNoneExists();
+  await createAdminAccountIfNoneExists();
 
   runApp(const MyApp());
 }

@@ -1,1 +1,20 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mgm-golf","appId":"1:377604933549:android:029ecaddb0a6b12a080324","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"mgm-golf","appId":"1:377604933549:ios:1b15e86ce7ff3401080324","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"macos":{"default":{"projectId":"mgm-golf","appId":"1:377604933549:ios:1b15e86ce7ff3401080324","uploadDebugSymbols":false,"fileOutput":"macos/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"mgm-golf","configurations":{"android":"1:377604933549:android:029ecaddb0a6b12a080324","ios":"1:377604933549:ios:1b15e86ce7ff3401080324","macos":"1:377604933549:ios:1b15e86ce7ff3401080324","web":"1:377604933549:web:d6a07c47e0ed9d2e080324","windows":"1:377604933549:web:ca433743b89942d8080324"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "asia-south1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  }
+}
