@@ -1,2 +1,33 @@
+# Node.js dependencies
 node_modules/
+
+# Environment variables
 .env
+.env.*
+*.env
+
+# Build files
+lib/
+dist/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Cache
+.npm
+.eslintcache
+.node_repl_history
+.firebase/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
