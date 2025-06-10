@@ -114,10 +114,8 @@ class AuthService {
     await _auth.signOut();
     await Future.delayed(const Duration(seconds: 1));
     if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (BuildContext context) => Login()),
-      );
+      // Use named route instead of MaterialPageRoute
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
@@ -128,6 +126,17 @@ class AuthService {
     String? teamPassword,
   }) async {
     try {
+      // Check if user already exists and has an admin role
+      final existingUserDoc =
+          await _firestore.collection('users').doc(user.uid).get();
+      String role = user.role;
+
+      // Preserve admin role if it already exists
+      if (existingUserDoc.exists &&
+          existingUserDoc.data()?['role'] == 'admin') {
+        role = 'admin';
+      }
+
       // Check team password if applicable
       if (user.golfDetails.playingInLeague &&
           user.golfDetails.teamId != null &&
@@ -244,10 +253,14 @@ class AuthService {
           }
 
           // Create a new user model with the updated role and bracket
+          // BUT preserve admin role if it was set
           final updatedUser = UserModel(
             uid: user.uid,
             email: user.email,
-            role: 'league_player',
+            role:
+                role == 'admin'
+                    ? 'admin'
+                    : 'league_player', // Keep admin role if present
             firstName: user.firstName,
             lastName: user.lastName,
             dateOfBirth: user.dateOfBirth,
@@ -283,12 +296,46 @@ class AuthService {
                 'players': FieldValue.arrayUnion([user.uid]),
               });
         } else {
-          // Save original user data to Firestore
-          await _firestore.collection('users').doc(user.uid).set(user.toMap());
+          // Save original user data to Firestore, but with preserved admin role if it exists
+          final updatedUser = UserModel(
+            uid: user.uid,
+            email: user.email,
+            role: role, // Use the preserved role (admin or user)
+            firstName: user.firstName,
+            lastName: user.lastName,
+            dateOfBirth: user.dateOfBirth,
+            gender: user.gender,
+            phoneNumber: user.phoneNumber,
+            golfDetails: user.golfDetails,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          );
+
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(updatedUser.toMap());
         }
       } else {
-        // Save original user data to Firestore
-        await _firestore.collection('users').doc(user.uid).set(user.toMap());
+        // Save original user data to Firestore, but with preserved admin role if it exists
+        final updatedUser = UserModel(
+          uid: user.uid,
+          email: user.email,
+          role: role, // Use the preserved role (admin or user)
+          firstName: user.firstName,
+          lastName: user.lastName,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          phoneNumber: user.phoneNumber,
+          golfDetails: user.golfDetails,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(updatedUser.toMap());
       }
 
       // Update display name in Firebase Auth

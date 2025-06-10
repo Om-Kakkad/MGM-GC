@@ -69,6 +69,13 @@ class _AdminPanelState extends State<AdminPanel>
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.red),
+            onPressed: _showLogoutConfirmationDialog,
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body:
           _isLoading
@@ -193,23 +200,25 @@ class _AdminPanelState extends State<AdminPanel>
 
   // Add a confirmation dialog before logging out
   void _showLogoutConfirmationDialog() {
+    final BuildContext currentContext = context;
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Confirm Logout'),
           content: const Text('Are you sure you want to log out?'),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(dialogContext).pop(); // Close the dialog
               },
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                _authService.signout(context: context); // Perform logout
+                Navigator.of(dialogContext).pop(); // Close the dialog
+                // Use the parent context for navigation
+                _authService.signout(context: currentContext);
               },
               child: const Text('Logout'),
             ),

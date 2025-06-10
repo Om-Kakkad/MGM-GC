@@ -69,7 +69,7 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
 
       List<Map<String, dynamic>> matches = [];
       for (var doc in matchesSnapshot.docs) {
-        Map<String, dynamic> match = doc.data() as Map<String, dynamic>;
+        Map<String, dynamic> match = doc.data();
         match['id'] = doc.id;
         match['eventId'] = eventId;
         matches.add(match);

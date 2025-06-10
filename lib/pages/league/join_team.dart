@@ -65,7 +65,7 @@ class _JoinTeamPageState extends State<JoinTeamPage> {
             'teamName': teamData['teamName'] ?? 'Unnamed Team',
             'eventId': eventId,
             'eventName': eventName,
-            'displayName': '${teamData['teamName']} (${eventName})',
+            'displayName': '${teamData['teamName']} ($eventName)',
           });
         }
       }

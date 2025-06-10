@@ -181,7 +181,7 @@ class MatchService {
   ) async {
     try {
       // Create hole key (e.g., "hole_1", "hole_2")
-      String holeKey = 'hole_${holeNumber}';
+      String holeKey = 'hole_$holeNumber';
 
       // Update match document with new hole result
       await _firestore

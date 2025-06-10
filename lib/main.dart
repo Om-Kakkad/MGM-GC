@@ -17,55 +17,22 @@ import 'package:mgm_gc/pages/events/events_list.dart';
 import 'package:mgm_gc/pages/events/event_details.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mgm_gc/pages/admin/match_management.dart';
 import 'package:mgm_gc/pages/league/join_team.dart';
-
-Future<void> createAdminAccountIfNoneExists() async {
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-  // Check if any admin exists
-  final QuerySnapshot adminQuery =
-      await firestore
-          .collection('users')
-          .where('role', isEqualTo: 'admin')
-          .limit(1)
-          .get();
-
-  if (adminQuery.docs.isEmpty) {
-    // No admin exists, create one
-    final UserCredential adminCredential = await auth
-        .createUserWithEmailAndPassword(
-          email: 'admin@example.com', // Replace with your desired admin email
-          password: 'Admin@123', // Replace with your desired admin password
-        );
-
-    final User adminUser = adminCredential.user!;
-    await firestore.collection('users').doc(adminUser.uid).set({
-      'uid': adminUser.uid,
-      'email': adminUser.email,
-      'role': 'admin',
-      'firstName': 'Admin',
-      'lastName': 'User',
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-
-    print('Admin account created with email: ${adminUser.email}');
-  }
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   if (kDebugMode) {
+    // Connect to Firebase emulators
     FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
     FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-  }
+    FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
 
-  // Create admin account if none exists
-  await createAdminAccountIfNoneExists();
+    print('Connected to Firebase emulators: Auth, Firestore, and Functions');
+  }
 
   runApp(const MyApp());
 }
