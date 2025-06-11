@@ -198,6 +198,33 @@ class MatchService {
     }
   }
 
+  // Update a match's status and optionally store league points
+  Future<void> updateMatchStatus(
+    String eventId,
+    String matchId,
+    String status, {
+    Map<String, dynamic>? leaguePoints,
+  }) async {
+    try {
+      Map<String, dynamic> data = {'matchStatus': status};
+      if (leaguePoints != null) {
+        data['leaguePoints'] = leaguePoints;
+      }
+
+      await _firestore
+          .collection('events')
+          .doc(eventId)
+          .collection('matches')
+          .doc(matchId)
+          .update(data);
+
+      print('Updated match $matchId status to $status');
+    } catch (e) {
+      print('Error updating match status: $e');
+      rethrow;
+    }
+  }
+
   // Update team documents with matchId
   Future<void> _updateTeamsWithMatch(
     String eventId,
