@@ -16,6 +16,35 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
   UserModel? _currentUser;
   bool _isLoading = true;
 
+  Future<Map<String, dynamic>?> _getTodayMatch(String eventId) async {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+    final end = start.add(const Duration(days: 1));
+
+    final snapshot = await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .where('matchDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+        .where('matchDateTime', isLessThan: Timestamp.fromDate(end))
+        .get();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final players = Map<String, dynamic>.from(data['players'] ?? {});
+      final uid = _authService.currentUser?.uid;
+      final bool inMatch = players.values
+          .whereType<List>()
+          .any((list) => list.contains(uid));
+      if (inMatch) {
+        data['id'] = doc.id;
+        data['eventId'] = eventId;
+        return data;
+      }
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -313,6 +342,32 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 20),
+                  FutureBuilder<Map<String, dynamic>?>(
+                    future: _getTodayMatch(eventId),
+                    builder: (context, matchSnapshot) {
+                      if (matchSnapshot.connectionState == ConnectionState.waiting) {
+                        return const SizedBox.shrink();
+                      }
+                      if (matchSnapshot.data != null) {
+                        final match = matchSnapshot.data!;
+                        return ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/match-scoring',
+                              arguments: {
+                                'eventId': match['eventId'],
+                                'matchId': match['id'],
+                              },
+                            );
+                          },
+                          child: const Text("Score Today's Match"),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ],
               ),
