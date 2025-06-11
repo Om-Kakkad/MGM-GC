@@ -20,6 +20,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mgm_gc/pages/admin/match_management.dart';
 import 'package:mgm_gc/pages/league/join_team.dart';
+import 'package:mgm_gc/pages/league/match_scoring_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
         '/match-management': (context) => const MatchManagementPage(),
         '/create-event': (context) => const EventCreationForm(),
         '/join-team': (context) => const JoinTeamPage(), // Add new route
+        '/match-scoring': (context) => const MatchScoringPage(),
       },
     );
   }
