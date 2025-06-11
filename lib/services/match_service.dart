@@ -225,6 +225,31 @@ class MatchService {
     }
   }
 
+  // Finalize a match by setting league points and status
+  Future<void> finalizeMatch(
+    String eventId,
+    String matchId,
+    Map<String, int> leaguePoints,
+    String status,
+  ) async {
+    try {
+      await _firestore
+          .collection('events')
+          .doc(eventId)
+          .collection('matches')
+          .doc(matchId)
+          .update({
+        'leaguePoints': leaguePoints,
+        'matchStatus': status,
+      });
+
+      print('Finalized match $matchId with status $status');
+    } catch (e) {
+      print('Error finalizing match: $e');
+      rethrow;
+    }
+  }
+
   // Update team documents with matchId
   Future<void> _updateTeamsWithMatch(
     String eventId,

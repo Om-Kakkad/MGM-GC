@@ -138,11 +138,14 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     double ptsA = aWins + halves * 0.5;
     double ptsB = bWins + halves * 0.5;
 
-    await _matchService.updateMatchStatus(
+    await _matchService.finalizeMatch(
       widget.eventId,
       widget.matchId,
+      {
+        'teamA': ptsA.round(),
+        'teamB': ptsB.round(),
+      },
       'completed',
-      leaguePoints: {'teamA': ptsA, 'teamB': ptsB},
     );
   }
 
