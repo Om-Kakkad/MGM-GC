@@ -49,13 +49,12 @@ service cloud.firestore {
       // Matches subcollection rules
       match /matches/{matchId} {
         allow read: if isAuthenticated();
-        allow create, update, delete: if isAdmin();
-        
-        // Hole results subcollection rules
-        match /holeResults/{holeId} {
-          allow read: if isAuthenticated();
-          allow write: if isAdmin();
-        }
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin() ||
+                      (isLeaguePlayer() &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                         'holeResults', 'matchStatus', 'leaguePoints'
+                       ]));
       }
       
       // Event registrations subcollection rules
