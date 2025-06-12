@@ -52,7 +52,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
     return Scaffold(
       appBar: AppBar(title: const Text('League Features')),
       body: DefaultTabController(
-        length: 3,
+        length: 4, // Change from 3 to 4 tabs
         child: Column(
           children: [
             TabBar(
@@ -61,6 +61,10 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                 Tab(icon: Icon(Icons.event), text: 'Upcoming Events'),
                 Tab(icon: Icon(Icons.leaderboard), text: 'Leaderboard'),
                 Tab(icon: Icon(Icons.people), text: 'My Team'),
+                Tab(
+                  icon: Icon(Icons.sports_golf),
+                  text: 'Scoring',
+                ), // Add new tab
               ],
             ),
             Expanded(
@@ -69,6 +73,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                   _buildEventsTab(),
                   _buildLeaderboardTab(),
                   _buildTeamTab(),
+                  _buildScoringTab(), // Add new tab view
                 ],
               ),
             ),
@@ -315,6 +320,112 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                     ),
                   ),
                 ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildScoringTab() {
+    // Check if user has eventId and teamId
+    final String? eventId = _currentUser?.golfDetails.eventId;
+    final String? teamId = _currentUser?.golfDetails.teamId;
+    final String? userId = _authService.currentUser?.uid;
+
+    if (eventId == null || teamId == null || userId == null) {
+      return const Center(child: Text('No match information available'));
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return StreamBuilder<QuerySnapshot>(
+      stream:
+          _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
+              .where(
+                'matchDateTime',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(today),
+              )
+              .where(
+                'matchDateTime',
+                isLessThan: Timestamp.fromDate(
+                  today.add(const Duration(days: 1)),
+                ),
+              )
+              .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(
+            child: Text('No matches available for scoring today'),
+          );
+        }
+
+        List<DocumentSnapshot> userMatches = [];
+
+        // Filter matches that this user is part of
+        for (var match in snapshot.data!.docs) {
+          final matchData = match.data() as Map<String, dynamic>;
+          final players = matchData['players'] as Map<String, dynamic>?;
+
+          if (players != null) {
+            bool isUserInMatch = false;
+            players.forEach((teamKey, playerList) {
+              if (playerList is List && playerList.contains(userId)) {
+                isUserInMatch = true;
+              }
+            });
+
+            if (isUserInMatch) {
+              userMatches.add(match);
+            }
+          }
+        }
+
+        if (userMatches.isEmpty) {
+          return const Center(
+            child: Text('You have no matches to score today'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: userMatches.length,
+          padding: const EdgeInsets.all(16.0),
+          itemBuilder: (context, index) {
+            final match = userMatches[index];
+            final matchData = match.data() as Map<String, dynamic>;
+            final matchTime =
+                (matchData['matchDateTime'] as Timestamp).toDate();
+            final matchId = match.id;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 16.0),
+              child: ListTile(
+                title: Text(
+                  'Match: ${matchData['matchType'] ?? ''} - ${matchData['matchPlayType'] ?? ''}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Time: ${matchTime.hour}:${matchTime.minute.toString().padLeft(2, '0')}',
+                ),
+                trailing: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/match_scoring',
+                      arguments: {'eventId': eventId, 'matchId': matchId},
+                    );
+                  },
+                  child: const Text('Score'),
+                ),
               ),
             );
           },

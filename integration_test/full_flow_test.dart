@@ -57,9 +57,7 @@ void main() {
     final eventRef = await store.collection('events').add({
       'eventName': 'Integration League',
       'eventType': 'League',
-      'eventDates': [
-        Timestamp.fromDate(DateTime.now().add(const Duration(days: 1))),
-      ],
+      'eventDates': [Timestamp.fromDate(DateTime.now())],
       'createdAt': FieldValue.serverTimestamp(),
     });
     final eventId = eventRef.id;
@@ -143,7 +141,7 @@ void main() {
       );
     }
 
-    DateTime baseDate = DateTime.now().add(const Duration(days: 1));
+    DateTime baseDate = DateTime.now();
 
     // helper to create a match
     Future<void> createMatch(
@@ -250,21 +248,21 @@ void main() {
     final firstMatch = matchesSnapshot.docs.first;
     final matchId = firstMatch.id;
 
-    await matchService.updateHoleResult(
-      eventId,
-      matchId,
-      1,
-      {'strokesA': 4, 'strokesB': 5, 'result': 'W'},
-    );
+    await matchService.updateHoleResult(eventId, matchId, 1, {
+      'strokesA': 4,
+      'strokesB': 5,
+      'result': 'W',
+    });
 
-    final holeDoc = await store
-        .collection('events')
-        .doc(eventId)
-        .collection('matches')
-        .doc(matchId)
-        .collection('holeResults')
-        .doc('1')
-        .get();
+    final holeDoc =
+        await store
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .collection('holeResults')
+            .doc('1')
+            .get();
     expect(holeDoc.exists, true);
     expect(holeDoc['strokesA'], 4);
 
@@ -275,12 +273,13 @@ void main() {
       bonusPoints: 0,
     );
 
-    final updatedMatch = await store
-        .collection('events')
-        .doc(eventId)
-        .collection('matches')
-        .doc(matchId)
-        .get();
+    final updatedMatch =
+        await store
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .get();
     expect(updatedMatch['matchOver'], true);
     expect(updatedMatch['regularPoints'], 2);
   });

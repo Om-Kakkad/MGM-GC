@@ -61,8 +61,17 @@ class MyApp extends StatelessWidget {
         '/event-management': (context) => const EventManagementPage(),
         '/match-management': (context) => const MatchManagementPage(),
         '/create-event': (context) => const EventCreationForm(),
-        '/join-team': (context) => const JoinTeamPage(), // Add new route
-        '/match-scoring': (context) => const MatchScoringPage(),
+        '/join-team': (context) => const JoinTeamPage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/match_scoring') {
+          final args = settings.arguments as Map<String, String>;
+          return MaterialPageRoute(
+            builder: (context) => MatchScoringPage(),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }
