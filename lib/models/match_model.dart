@@ -11,6 +11,7 @@ class Match {
   final Map<String, dynamic> holeResults; // Changed from List to Map
   final String matchStatus;
   final bool bonusPoint; // New field for bonus point
+  final List<String> participantUids; // Flattened list of all player uids
   final bool matchOver;
   final num regularPoints;
   final num bonusPoints;
@@ -26,6 +27,7 @@ class Match {
     this.holeResults = const {}, // Default to empty map
     this.matchStatus = 'active',
     this.bonusPoint = false, // Default to false
+    this.participantUids = const [],
     this.matchOver = false,
     this.regularPoints = 0,
     this.bonusPoints = 0,
@@ -42,6 +44,7 @@ class Match {
       'holeResults': holeResults, // Now a map
       'matchStatus': matchStatus,
       'bonusPoint': bonusPoint, // Include the new field
+      'participantUids': participantUids,
       'matchOver': matchOver,
       'regularPoints': regularPoints,
       'bonusPoints': bonusPoints,
@@ -72,6 +75,7 @@ class Match {
       holeResults: Map<String, dynamic>.from(map['holeResults'] ?? {}),
       matchStatus: map['matchStatus'] ?? 'active',
       bonusPoint: map['bonusPoint'] ?? false, // Extract the new field
+      participantUids: List<String>.from(map['participantUids'] ?? []),
       matchOver: map['matchOver'] ?? false,
       regularPoints: map['regularPoints'] ?? 0,
       bonusPoints: map['bonusPoints'] ?? 0,

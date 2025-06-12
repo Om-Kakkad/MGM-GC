@@ -105,6 +105,9 @@ class MatchService {
 
       // CRITICAL: Convert all complex objects to simple serializable types
       // This avoids any unexpected Firebase serialization issues
+      final allUids = <String>{};
+      match.players.forEach((_, list) => allUids.addAll(list));
+
       final Map<String, dynamic> safeMap = {
         'teams': List<String>.from(match.teams),
         'players': Map<String, dynamic>.from(
@@ -119,6 +122,9 @@ class MatchService {
         // Convert holeResults from array to map
         'holeResults': {}, // Initialize empty map
         'bonusPoint': match.bonusPoint, // Add the bonusPoint field
+        'participantUids': match.participantUids.isNotEmpty
+            ? match.participantUids
+            : allUids.toList(),
       };
 
       // Add matchID if it exists
