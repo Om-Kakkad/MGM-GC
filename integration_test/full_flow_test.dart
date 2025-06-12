@@ -246,5 +246,42 @@ void main() {
             .collection('matches')
             .get();
     expect(matchesSnapshot.docs.length, 6);
+
+    final firstMatch = matchesSnapshot.docs.first;
+    final matchId = firstMatch.id;
+
+    await matchService.updateHoleResult(
+      eventId,
+      matchId,
+      1,
+      {'strokesA': 4, 'strokesB': 5, 'result': 'W'},
+    );
+
+    final holeDoc = await store
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .collection('holeResults')
+        .doc('1')
+        .get();
+    expect(holeDoc.exists, true);
+    expect(holeDoc['strokesA'], 4);
+
+    await matchService.setMatchOver(
+      eventId,
+      matchId,
+      regularPoints: 2,
+      bonusPoints: 0,
+    );
+
+    final updatedMatch = await store
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .get();
+    expect(updatedMatch['matchOver'], true);
+    expect(updatedMatch['regularPoints'], 2);
   });
 }
