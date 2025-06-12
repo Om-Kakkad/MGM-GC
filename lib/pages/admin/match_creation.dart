@@ -31,8 +31,10 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
   String? _selectedTeamAId;
   String? _selectedTeamBId;
   String _matchType = '4-ball';
+  String _matchPlayType = 'match play';
   DateTime? _selectedDate;
   TimeOfDay _selectedTime = TimeOfDay.now();
+  bool _bonusPoint = false; // Add this line for the new bonus point field
 
   // Selected players
   List<String> _selectedTeamAPlayerIds = [];
@@ -281,9 +283,11 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
             'teamB': _selectedTeamBPlayerIds,
           },
           matchType: _matchType,
+          matchPlayType: _matchPlayType,
           matchDateTime: matchDateTime,
-          holeResults: {}, // Empty map instead of array
+          holeResults: {},
           matchStatus: 'active',
+          bonusPoint: _bonusPoint, // Include the new field
         );
 
         // Try to identify any null values in the match
@@ -292,9 +296,11 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
           'teams': match.teams,
           'players': match.players,
           'matchType': match.matchType,
+          'matchPlayType': match.matchPlayType,
           'matchDateTime': match.matchDateTime,
           'holeResults': match.holeResults,
           'matchStatus': match.matchStatus,
+          'bonusPoint': match.bonusPoint, // Add to debug info
         };
 
         print('Match object properties:');
@@ -449,6 +455,78 @@ class _MatchCreationFormState extends State<MatchCreationForm> {
                             _matchType = value!;
                           });
                         },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Match Play Type (New dropdown)
+                      _buildDropdown(
+                        label: 'Match Play Type',
+                        hint: 'Select match play type',
+                        value: _matchPlayType,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'match play',
+                            child: Text('Match Play'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'greensome',
+                            child: Text('Greensome'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _matchPlayType = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Add the Bonus Point toggle switch here
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bonus Point',
+                            style: GoogleFonts.raleway(
+                              textStyle: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.normal,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xffF7F7F9),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Award bonus point for this match',
+                                  style: GoogleFonts.raleway(
+                                    textStyle: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                                Switch(
+                                  value: _bonusPoint,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _bonusPoint = value;
+                                    });
+                                  },
+                                  activeColor: const Color(0xff0D6EFD),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
 

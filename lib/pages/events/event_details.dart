@@ -143,7 +143,27 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        _buildDetailRow('Scoring Type', event.scoringType),
+        // Remove scoring type reference as it no longer exists
+        // _buildDetailRow('Scoring Type', event.scoringType),
+
+        // Display information about the league instead
+        const Text(
+          'This is a league event where teams compete against each other in matches.',
+          style: TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 16),
+
+        // You could add code here to fetch and display bracket information
+        // For example:
+        // FutureBuilder<Map<String, dynamic>>(
+        //   future: _eventService.getEventBrackets(event.id),
+        //   builder: (context, snapshot) {
+        //     if (snapshot.hasData) {
+        //       // Display bracket information
+        //     }
+        //     return const SizedBox();
+        //   }
+        // ),
       ],
     );
   }

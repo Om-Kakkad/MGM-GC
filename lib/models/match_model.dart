@@ -6,9 +6,11 @@ class Match {
   final List<String> teams;
   final Map<String, List<String>> players;
   final String matchType;
+  final String matchPlayType; // New field for match play or greensome
   final DateTime matchDateTime;
   final Map<String, dynamic> holeResults; // Changed from List to Map
   final String matchStatus;
+  final bool bonusPoint; // New field for bonus point
 
   Match({
     this.matchID,
@@ -16,9 +18,11 @@ class Match {
     required this.teams,
     required this.players,
     required this.matchType,
+    this.matchPlayType = 'match play', // Default to 'match play'
     required this.matchDateTime,
     this.holeResults = const {}, // Default to empty map
     this.matchStatus = 'active',
+    this.bonusPoint = false, // Default to false
   });
 
   Map<String, dynamic> toMap() {
@@ -27,9 +31,11 @@ class Match {
       'teams': teams,
       'players': players,
       'matchType': matchType,
+      'matchPlayType': matchPlayType, // Include the new field
       'matchDateTime': Timestamp.fromDate(matchDateTime),
       'holeResults': holeResults, // Now a map
       'matchStatus': matchStatus,
+      'bonusPoint': bonusPoint, // Include the new field
     };
 
     // Add matchID if it exists
@@ -51,9 +57,12 @@ class Match {
         ),
       ),
       matchType: map['matchType'] ?? '4-ball',
+      matchPlayType:
+          map['matchPlayType'] ?? 'match play', // Extract the new field
       matchDateTime: (map['matchDateTime'] as Timestamp).toDate(),
       holeResults: Map<String, dynamic>.from(map['holeResults'] ?? {}),
       matchStatus: map['matchStatus'] ?? 'active',
+      bonusPoint: map['bonusPoint'] ?? false, // Extract the new field
     );
   }
 }

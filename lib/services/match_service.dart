@@ -113,10 +113,12 @@ class MatchService {
           ),
         ),
         'matchType': match.matchType,
+        'matchPlayType': match.matchPlayType, // Add the new field
         'matchDateTime': Timestamp.fromDate(match.matchDateTime),
         'matchStatus': match.matchStatus,
         // Convert holeResults from array to map
         'holeResults': {}, // Initialize empty map
+        'bonusPoint': match.bonusPoint, // Add the bonusPoint field
       };
 
       // Add matchID if it exists

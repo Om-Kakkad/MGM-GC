@@ -33,7 +33,6 @@ abstract class Event {
         eventDescription: data['eventDescription'] ?? '',
         eventType: data['eventType'] ?? '',
         eventDates: dates,
-        scoringType: data['scoringType'] ?? '',
       );
     } else {
       return TournamentEvent(
@@ -52,15 +51,12 @@ abstract class Event {
 }
 
 class LeagueEvent extends Event {
-  final String scoringType;
-
   LeagueEvent({
     required super.id,
     required super.eventName,
     required super.eventDescription,
     required super.eventType,
     required super.eventDates,
-    required this.scoringType,
   });
 }
 

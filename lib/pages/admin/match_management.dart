@@ -332,6 +332,10 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                                     matchData['matchStatus'] ?? 'active';
                                 final String matchType =
                                     matchData['matchType'] ?? '4-ball';
+                                final String matchPlayType =
+                                    matchData['matchPlayType'] ?? 'match play';
+                                final bool bonusPoint =
+                                    matchData['bonusPoint'] ?? false;
 
                                 // Get team IDs for display
                                 final List<String> teamIds = List<String>.from(
@@ -436,13 +440,34 @@ class _MatchManagementPageState extends State<MatchManagementPage> {
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  matchType,
+                                                  '$matchType - $matchPlayType',
                                                   style: const TextStyle(
                                                     color: Colors.grey,
                                                   ),
                                                 ),
                                               ],
                                             ),
+                                            if (bonusPoint) ...[
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons.star,
+                                                    size: 16,
+                                                    color: Colors.amber,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  const Text(
+                                                    'Bonus Point Match',
+                                                    style: TextStyle(
+                                                      color: Colors.amber,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                             const SizedBox(height: 16),
                                             Row(
                                               mainAxisAlignment:

@@ -57,7 +57,6 @@ void main() {
     final eventRef = await store.collection('events').add({
       'eventName': 'Integration League',
       'eventType': 'League',
-      'scoringType': 'Matchplay',
       'eventDates': [
         Timestamp.fromDate(DateTime.now().add(const Duration(days: 1))),
       ],
@@ -153,24 +152,30 @@ void main() {
       List<String> teamAPlayers,
       List<String> teamBPlayers,
       int offset,
+      String matchPlayType,
+      bool bonusPoint, // Add bonusPoint parameter
     ) async {
       final match = Match(
         eventID: eventId,
         teams: teamIds,
         players: {'teamA': teamAPlayers, 'teamB': teamBPlayers},
         matchType: type,
+        matchPlayType: matchPlayType,
         matchDateTime: baseDate.add(Duration(hours: offset)),
+        bonusPoint: bonusPoint, // Set bonusPoint in Match object
       );
       await matchService.createMatch(match);
     }
 
-    // Two 2-ball matches
+    // Two 2-ball matches - one match play, one greensome
     await createMatch(
       '2-ball',
       [teams[0].teamID!, teams[1].teamID!],
       [playersByTeam[teams[0].teamID!]![0]],
       [playersByTeam[teams[1].teamID!]![0]],
       0,
+      'match play',
+      false, // No bonus point
     );
     await createMatch(
       '2-ball',
@@ -178,9 +183,11 @@ void main() {
       [playersByTeam[teams[2].teamID!]![0]],
       [playersByTeam[teams[3].teamID!]![0]],
       1,
+      'greensome',
+      false, // No bonus point
     );
 
-    // Four 4-ball matches
+    // Four 4-ball matches - two match play, two greensome
     await createMatch(
       '4-ball',
       [teams[0].teamID!, teams[2].teamID!],
@@ -193,6 +200,8 @@ void main() {
         playersByTeam[teams[2].teamID!]![2],
       ],
       2,
+      'match play',
+      true, // This match has a bonus point
     );
     await createMatch(
       '4-ball',
@@ -206,6 +215,8 @@ void main() {
         playersByTeam[teams[3].teamID!]![2],
       ],
       3,
+      'greensome',
+      false, // No bonus point
     );
 
     await createMatch(
@@ -214,6 +225,8 @@ void main() {
       [playersByTeam[teams[0].teamID!]![0]],
       [playersByTeam[teams[1].teamID!]![1]],
       4,
+      'match play',
+      false, // No bonus point
     );
     await createMatch(
       '4-ball',
@@ -221,6 +234,8 @@ void main() {
       [playersByTeam[teams[2].teamID!]![0]],
       [playersByTeam[teams[3].teamID!]![1]],
       5,
+      'greensome',
+      false, // No bonus point
     );
 
     // verify matches count

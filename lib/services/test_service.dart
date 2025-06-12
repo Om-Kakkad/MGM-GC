@@ -185,11 +185,13 @@ class TestService {
             'teams': teamIds,
             'players': {'teamA': [], 'teamB': []},
             'matchType': '4-ball',
+            'matchPlayType': 'match play',
             'matchDateTime': Timestamp.fromDate(
               DateTime.now().add(const Duration(days: 7)),
             ),
             'matchStatus': 'active',
             'holeResults': {},
+            'bonusPoint': false, // Add the new field
             'createdAt': FieldValue.serverTimestamp(),
           });
 

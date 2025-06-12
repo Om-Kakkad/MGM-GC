@@ -5,7 +5,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:mgm_gc/models/user_model.dart';
 
 import '../pages/home/home.dart';
-import '../pages/login/login.dart';
 import '../pages/registration/registration_page.dart';
 
 class AuthService {

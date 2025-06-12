@@ -43,7 +43,6 @@ class _EventCreationFormState extends State<EventCreationForm> {
 
   // Form values
   String _eventType = 'League';
-  String _scoringType = 'Stableford';
   String _tournamentFormat = 'Knockout';
   String _bracketType = 'Single Elimination';
 
@@ -110,8 +109,6 @@ class _EventCreationFormState extends State<EventCreationForm> {
 
         // Add event-specific fields based on event type
         if (_eventType == 'League') {
-          eventData['scoringType'] = _scoringType;
-
           // Add bracket definitions for league events
           eventData['brackets'] = {
             'gold': {
@@ -309,30 +306,6 @@ class _EventCreationFormState extends State<EventCreationForm> {
               if (_eventType == 'League') ...[
                 _buildSectionTitle('League-Specific Details'),
                 const SizedBox(height: 10),
-
-                _buildDropdown(
-                  label: 'Scoring Type',
-                  value: _scoringType,
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'Stableford',
-                      child: Text('Stableford'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Matchplay',
-                      child: Text('Matchplay'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'Normal Score Input',
-                      child: Text('Normal Score Input'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _scoringType = value!;
-                    });
-                  },
-                ),
 
                 const SizedBox(height: 25),
                 _buildSectionTitle('Bracket Definitions'),
