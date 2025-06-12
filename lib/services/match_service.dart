@@ -174,7 +174,7 @@ class MatchService {
     }
   }
 
-  // Update hole results with a map-based structure
+  // Update hole results stored as subcollection documents
   Future<void> updateHoleResult(
     String eventId,
     String matchId,
@@ -182,22 +182,55 @@ class MatchService {
     Map<String, dynamic> holeData,
   ) async {
     try {
-      // Create hole key (e.g., "hole_1", "hole_2")
-      String holeKey = 'hole_$holeNumber';
-
-      // Update match document with new hole result
       await _firestore
           .collection('events')
           .doc(eventId)
           .collection('matches')
           .doc(matchId)
-          .update({'holeResults.$holeKey': holeData});
+          .collection('holeResults')
+          .doc(holeNumber.toString())
+          .set(holeData, SetOptions(merge: true));
 
       print('Updated hole result for hole $holeNumber');
     } catch (e) {
       print('Error updating hole result: $e');
       rethrow;
     }
+  }
+
+  Future<Map<String, dynamic>?> getHoleResult(
+    String eventId,
+    String matchId,
+    int holeNumber,
+  ) async {
+    final doc = await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .collection('holeResults')
+        .doc(holeNumber.toString())
+        .get();
+    return doc.data();
+  }
+
+  Future<void> setMatchOver(
+    String eventId,
+    String matchId,
+    {
+    required num regularPoints,
+    required num bonusPoints,
+  }) async {
+    await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .update({
+      'matchOver': true,
+      'regularPoints': regularPoints,
+      'bonusPoints': bonusPoints,
+    });
   }
 
   // Update team documents with matchId

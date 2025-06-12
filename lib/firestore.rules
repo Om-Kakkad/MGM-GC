@@ -50,11 +50,20 @@ service cloud.firestore {
       match /matches/{matchId} {
         allow read: if isAuthenticated();
         allow create, update, delete: if isAdmin();
-        
+
+        function matchPlayers() {
+          return get(/databases/$(database)/documents/events/$(eventId)/matches/$(matchId)).data.players;
+        }
+
         // Hole results subcollection rules
         match /holeResults/{holeId} {
           allow read: if isAuthenticated();
-          allow write: if isAdmin();
+          allow write: if isAdmin() || (
+            isLeaguePlayer() &&
+            (matchPlayers().teamA.hasAny([request.auth.uid]) ||
+             matchPlayers().teamB.hasAny([request.auth.uid])) &&
+            !get(/databases/$(database)/documents/events/$(eventId)/matches/$(matchId)).data.matchOver
+          );
         }
       }
       
