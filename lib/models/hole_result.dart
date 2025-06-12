@@ -1,21 +1,24 @@
 
+/// Representation of a single hole result.
+///
+/// The revised scoring system tracks only which side won the hole
+/// (Team A, Team B, or the hole being all square). Stroke counts are no
+/// longer persisted.
 class HoleResult {
-  final int strokesA;
-  final int strokesB;
-  final String result; // "W" | "L" | "AS"
+  /// `result` is one of:
+  ///  - `"A"`  → Team A wins the hole
+  ///  - `"B"`  → Team B wins the hole
+  ///  - `"AS"` → Hole halved (all square)
+  final String result;
 
-  const HoleResult({required this.strokesA, required this.strokesB, required this.result});
+  const HoleResult({required this.result});
 
   Map<String, dynamic> toMap() => {
-        'strokesA': strokesA,
-        'strokesB': strokesB,
         'result': result,
       };
 
   factory HoleResult.fromMap(Map<String, dynamic> map) {
     return HoleResult(
-      strokesA: map['strokesA'] ?? 0,
-      strokesB: map['strokesB'] ?? 0,
       result: map['result'] ?? 'AS',
     );
   }
