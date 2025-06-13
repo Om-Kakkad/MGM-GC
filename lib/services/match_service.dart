@@ -122,9 +122,10 @@ class MatchService {
         // Convert holeResults from array to map
         'holeResults': {}, // Initialize empty map
         'bonusPoint': match.bonusPoint, // Add the bonusPoint field
-        'participantUids': match.participantUids.isNotEmpty
-            ? match.participantUids
-            : allUids.toList(),
+        'participantUids':
+            match.participantUids.isNotEmpty
+                ? match.participantUids
+                : allUids.toList(),
       };
 
       // Add matchID if it exists
@@ -209,21 +210,41 @@ class MatchService {
     String matchId,
     int holeNumber,
   ) async {
-    final doc = await _firestore
-        .collection('events')
-        .doc(eventId)
-        .collection('matches')
-        .doc(matchId)
-        .collection('holeResults')
-        .doc(holeNumber.toString())
-        .get();
+    final doc =
+        await _firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .collection('holeResults')
+            .doc(holeNumber.toString())
+            .get();
     return doc.data();
+  }
+
+  // Get complete match details
+  Future<Map<String, dynamic>?> getMatchDetails(
+    String eventId,
+    String matchId,
+  ) async {
+    try {
+      final doc =
+          await _firestore
+              .collection('events')
+              .doc(eventId)
+              .collection('matches')
+              .doc(matchId)
+              .get();
+      return doc.data();
+    } catch (e) {
+      print('Error getting match details: $e');
+      rethrow;
+    }
   }
 
   Future<void> setMatchOver(
     String eventId,
-    String matchId,
-    {
+    String matchId, {
     required num regularPoints,
     required num bonusPoints,
   }) async {
@@ -233,10 +254,10 @@ class MatchService {
         .collection('matches')
         .doc(matchId)
         .update({
-      'matchOver': true,
-      'regularPoints': regularPoints,
-      'bonusPoints': bonusPoints,
-    });
+          'matchOver': true,
+          'regularPoints': regularPoints,
+          'bonusPoints': bonusPoints,
+        });
   }
 
   Future<void> updateStrokeMap(

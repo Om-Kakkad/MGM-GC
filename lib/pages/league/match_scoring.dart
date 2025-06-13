@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/hole_result.dart';
 import '../../services/match_service.dart';
 import '../../services/auth_service.dart';
@@ -23,10 +24,8 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   bool _bonus = false;
   bool _isAdmin = false;
   String _matchPlayType = 'match play';
-  // Change from String to List<String>
   List<String> _teamA = [];
   List<String> _teamB = [];
-  // Add new variables for team names and player info
   String _teamAName = "Team A";
   String _teamBName = "Team B";
   List<Map<String, dynamic>> _teamAPlayerInfo = [];
@@ -36,6 +35,8 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   final Map<String, int> _teamStrokeDiffs = {};
   final Map<int, int> _runningDiffs = {};
   Map<String, List<int>> _strokeMap = {};
+  DateTime _matchDateTime = DateTime.now();
+  String _matchType = '4-ball';
 
   final List<int> pars = [4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5];
 
@@ -77,23 +78,37 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         _results[i] = HoleResult.fromMap(data);
       }
     }
-    final matchDoc = await FirebaseFirestore.instance
-            .collection('events')
-            .doc(eventId)
-            .collection('matches')
-            .doc(matchId)
-            .get();
-    final matchData = matchDoc.data() ?? {};
+
+    // Get match details
+    final matchDetails = await _matchService.getMatchDetails(eventId, matchId);
+    if (matchDetails == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load match details')),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
+    final matchData = matchDetails;
     _matchOver = (matchData['matchOver'] ?? false) as bool;
     _bonus = matchData['bonusPoint'] ?? false;
     _matchPlayType = matchData['matchPlayType'] ?? 'match play';
+    _matchType = matchData['matchType'] ?? '4-ball';
     _teamA = List<String>.from(matchData['players']?['teamA'] ?? []);
     _teamB = List<String>.from(matchData['players']?['teamB'] ?? []);
+
+    // Get match date time
+    if (matchData['matchDateTime'] != null) {
+      _matchDateTime = (matchData['matchDateTime'] as Timestamp).toDate();
+    }
+
     _strokeMap = {};
     if (matchData['strokeMap'] != null) {
       final sm = Map<String, dynamic>.from(matchData['strokeMap']);
       _strokeMap = {
-        for (final e in sm.entries) e.key: List<int>.from(e.value as List)
+        for (final e in sm.entries) e.key: List<int>.from(e.value as List),
       };
     }
 
@@ -113,12 +128,22 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     );
     final DateTime scheduled =
         (matchData['matchDateTime'] as Timestamp).toDate();
+
+    // Check if user is allowed to access this match
     final bool allowed =
         uid != null &&
         participantUids.contains(uid) &&
         DateUtils.isSameDay(scheduled, DateTime.now());
+
     if (!allowed) {
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'You are not authorized to score this match or the match is not scheduled for today',
+            ),
+          ),
+        );
         Navigator.pop(context);
       }
       return;
@@ -127,7 +152,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     final userData = uid != null ? await _authService.getUserData(uid) : null;
     _isAdmin = userData?.role == 'admin';
 
-    // Now the spread operator works correctly with lists
+    // Fetch player handicaps
     final toFetch = [..._teamA, ..._teamB];
     _handicaps.clear();
     for (final id in toFetch) {
@@ -135,6 +160,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       _handicaps[id] = u.golfDetails.handicap?.toDouble() ?? 0;
     }
 
+    // Calculate stroke differences
     _strokeDiffs.clear();
     _teamStrokeDiffs.clear();
     if (_matchPlayType == 'greensome') {
@@ -167,6 +193,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       });
     }
 
+    // Calculate stroke map if not already available
     if (_strokeMap.isEmpty && !_matchOver) {
       Map<String, List<int>> sm = {};
       List<int> holesFor(int diff) {
@@ -182,6 +209,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         }
         return holes;
       }
+
       if (_matchPlayType == 'greensome') {
         sm['A'] = holesFor(_teamStrokeDiffs['A'] ?? 0);
         sm['B'] = holesFor(_teamStrokeDiffs['B'] ?? 0);
@@ -205,7 +233,6 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     setState(() => _loading = false);
   }
 
-  // Add method to fetch team name
   Future<void> _fetchTeamName(String teamId, bool isTeamA) async {
     try {
       final teamDoc =
@@ -237,7 +264,6 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     }
   }
 
-  // Add method to fetch player info for initials
   Future<List<Map<String, dynamic>>> _fetchPlayersInfo(
     List<String> playerIds,
   ) async {
@@ -304,6 +330,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     num bPoints = 0;
     int diff = 0;
     int endHole = 18;
+
     for (var i = 1; i <= 18; i++) {
       final res = _results[i];
       if (res != null) {
@@ -322,6 +349,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
             break;
         }
       }
+
       if (_bonus && endHole == 18) {
         final holesLeft = 18 - i;
         if (diff.abs() > holesLeft) {
@@ -348,6 +376,41 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     return {'a': aPoints, 'b': bPoints, 'aBonus': aBonus, 'bBonus': bBonus};
   }
 
+  // Get a descriptive status string for the current match
+  String _getMatchStatusText() {
+    int lastHole = 18;
+    int? finalDiff;
+
+    for (int i = 18; i >= 1; i--) {
+      if (_results.containsKey(i)) {
+        finalDiff = _runningDiffs[i];
+        lastHole = i;
+        break;
+      }
+    }
+
+    if (finalDiff == null) return 'Match not started';
+
+    if (finalDiff == 0) return 'All Square';
+
+    final remaining = 18 - lastHole;
+
+    if (finalDiff > 0) {
+      if (finalDiff > remaining) {
+        return '$_teamAName wins ${finalDiff} & ${remaining}';
+      } else {
+        return '$_teamAName +${finalDiff}';
+      }
+    } else {
+      final abs = -finalDiff;
+      if (abs > remaining) {
+        return '$_teamBName wins ${abs} & ${remaining}';
+      } else {
+        return '$_teamBName +${abs}';
+      }
+    }
+  }
+
   Widget _buildRow(int hole) {
     final res = _results[hole];
 
@@ -355,20 +418,36 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     final diff = _runningDiffs[hole] ?? 0;
     final remaining = 18 - hole;
     String bannerText;
+
     if (diff == 0) {
       bannerText = 'All Square';
     } else if (diff > 0) {
       bannerText =
-          diff > remaining ? 'Team A wins $diff & $remaining' : 'Team A +$diff';
+          diff > remaining
+              ? '$_teamAName wins $diff & $remaining'
+              : '$_teamAName +$diff';
     } else {
       final abs = -diff;
       bannerText =
-          abs > remaining ? 'Team B wins $abs & $remaining' : 'Team B +$abs';
+          abs > remaining
+              ? '$_teamBName wins $abs & $remaining'
+              : '$_teamBName +$abs';
     }
 
     final banner = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(bannerText),
+      child: Text(
+        bannerText,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color:
+              diff == 0
+                  ? Colors.grey[700]
+                  : diff > 0
+                  ? Colors.blue
+                  : Colors.orange,
+        ),
+      ),
     );
 
     int dotsForSide(String team) {
@@ -387,10 +466,10 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         return _matchPlayType == 'greensome'
             ? _dotsFor(_teamStrokeDiffs[team] ?? 0, hole)
             : _teamA.isNotEmpty
-                ? (team == 'A'
-                    ? _dotsFor(_strokeDiffs[_teamA.first] ?? 0, hole)
-                    : _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole))
-                : 0;
+            ? (team == 'A'
+                ? _dotsFor(_strokeDiffs[_teamA.first] ?? 0, hole)
+                : _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole))
+            : 0;
       }
     }
 
@@ -400,71 +479,105 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     Widget buildToggle(String team, int dots) {
       final current = res?.result ?? 'AS';
       int index;
+
+      // Determine the index based on current result
       if (team == 'A') {
         if (current == 'A') {
-          index = 0;
+          index = 0; // Win
         } else if (current == 'AS') {
-          index = 1;
+          index = 1; // All Square
         } else {
-          index = 2; // B wins -> A loss
+          index = 2; // Loss (B wins)
         }
       } else {
         if (current == 'B') {
-          index = 0;
+          index = 0; // Win
         } else if (current == 'AS') {
-          index = 1;
+          index = 1; // All Square
         } else {
-          index = 2; // A wins -> B loss
+          index = 2; // Loss (A wins)
         }
       }
 
-      return Row(
-        mainAxisSize: MainAxisSize.min, // Use minimum space required
+      return Column(
         children: [
-          Flexible(
-            child: ToggleButtons(
-              isSelected: [index == 0, index == 1, index == 2],
-              onPressed:
-                  _matchOver && !_isAdmin
-                      ? null
-                      : (i) {
-                        String newRes;
-                        if (team == 'A') {
-                          if (i == 0)
-                            newRes = 'A';
-                          else if (i == 1)
-                            newRes = 'AS';
-                          else
-                            newRes = 'B';
-                        } else {
-                          if (i == 0)
-                            newRes = 'B';
-                          else if (i == 1)
-                            newRes = 'AS';
-                          else
-                            newRes = 'A';
-                        }
-                        _setHoleResult(hole, newRes);
-                      },
-              constraints: const BoxConstraints(
-                minWidth: 30,
-                minHeight: 36,
-              ), // Smaller constraints
-              children: const [
-                Icon(Icons.check, size: 18),
-                Icon(Icons.remove, size: 18),
-                Icon(Icons.close, size: 18),
-              ],
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: ToggleButtons(
+                  direction: Axis.horizontal,
+                  isSelected: [index == 0, index == 1, index == 2],
+                  onPressed:
+                      _matchOver && !_isAdmin
+                          ? null
+                          : (i) {
+                            String newRes;
+                            if (team == 'A') {
+                              if (i == 0)
+                                newRes = 'A';
+                              else if (i == 1)
+                                newRes = 'AS';
+                              else
+                                newRes = 'B';
+                            } else {
+                              if (i == 0)
+                                newRes = 'B';
+                              else if (i == 1)
+                                newRes = 'AS';
+                              else
+                                newRes = 'A';
+                            }
+                            _setHoleResult(hole, newRes);
+                          },
+                  borderRadius: BorderRadius.circular(8),
+                  selectedBorderColor:
+                      team == 'A' ? Colors.blue : Colors.orange,
+                  selectedColor: Colors.white,
+                  fillColor: team == 'A' ? Colors.blue : Colors.orange,
+                  color:
+                      team == 'A'
+                          ? Colors.blue.withOpacity(0.5)
+                          : Colors.orange.withOpacity(0.5),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check, size: 16),
+                        Text('Win', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.remove, size: 16),
+                        Text('AS', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.close, size: 16),
+                        Text('Loss', style: TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           if (dots > 0)
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 2),
-                child: Text(
-                  '•' * dots,
-                  overflow: TextOverflow.ellipsis, // Handle overflow gracefully
-                  style: const TextStyle(fontSize: 12), // Smaller font size
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '●' * dots,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: team == 'A' ? Colors.blue : Colors.orange,
                 ),
               ),
             ),
@@ -496,7 +609,10 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
                       message: 'Handicap: ${player['handicap'] ?? 'N/A'}',
                       child: CircleAvatar(
                         radius: 12,
-                        backgroundColor: Colors.blue.shade100,
+                        backgroundColor:
+                            players == _teamAPlayerInfo
+                                ? Colors.blue.shade100
+                                : Colors.orange.shade100,
                         child: Text(
                           player['initials'],
                           style: const TextStyle(
@@ -535,30 +651,33 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
             ),
           ),
         Card(
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Row(
+            child: Column(
               children: [
-                SizedBox(
-                  width: 20,
-                  child: Text(hole.toString()),
-                ), // Reduced width
-                SizedBox(
-                  width: 20,
-                  child: Text(pars[hole - 1].toString()),
-                ), // Reduced width
-                SizedBox(
-                  width: 20,
-                  child: Text(strokeIndex[hole - 1].toString()),
-                ), // Reduced width
-                Expanded(
-                  flex: 5, // Allocate more space for Team A
-                  child: buildToggle('A', dotsA),
-                ),
-                const SizedBox(width: 4), // Reduced spacing
-                Expanded(
-                  flex: 5, // Allocate more space for Team B
-                  child: buildToggle('B', dotsB),
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Hole $hole',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text('Par ${pars[hole - 1]}'),
+                          Text('SI ${strokeIndex[hole - 1]}'),
+                        ],
+                      ),
+                    ),
+                    Expanded(flex: 5, child: buildToggle('A', dotsA)),
+                    const SizedBox(width: 4),
+                    Expanded(flex: 5, child: buildToggle('B', dotsB)),
+                  ],
                 ),
               ],
             ),
@@ -574,33 +693,205 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    final formattedDate = DateFormat('EEEE, MMMM d').format(_matchDateTime);
+    final formattedTime = DateFormat('h:mm a').format(_matchDateTime);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Match Scoring')),
+      appBar: AppBar(title: const Text('Match Scoring'), elevation: 2),
       body: Column(
         children: [
+          // Enhanced match header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$_matchType - $_matchPlayType',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (_matchOver)
+                      Chip(
+                        label: const Text('Match Complete'),
+                        backgroundColor: Colors.green.withOpacity(0.2),
+                        labelStyle: const TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$formattedDate at $formattedTime',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _matchOver ? Icons.emoji_events : Icons.golf_course,
+                        color: Colors.grey[700],
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _getMatchStatusText(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (_bonus)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Bonus Point Match',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Hole list
           Expanded(
             child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: 18,
               itemBuilder: (context, index) => _buildRow(index + 1),
             ),
           ),
-          Padding(
+
+          // Match over button with enhanced styling
+          Container(
             padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed:
-                  _matchOver && !_isAdmin
-                      ? null
-                      : () async {
-                        final pts = _calculatePoints();
-                        await _matchService.setMatchOver(
-                          eventId,
-                          matchId,
-                          regularPoints: pts['a']!,
-                          bonusPoints: pts['aBonus']!,
-                        );
-                        await _loadData();
-                      },
-              child: const Text('Match Over'),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed:
+                    _matchOver && !_isAdmin
+                        ? null
+                        : () async {
+                          // Show confirmation dialog
+                          final confirm =
+                              await showDialog<bool>(
+                                context: context,
+                                builder:
+                                    (context) => AlertDialog(
+                                      title: const Text('Match Over'),
+                                      content: const Text(
+                                        'Are you sure you want to finalize this match? Once complete, scoring can only be modified by an admin.',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed:
+                                              () =>
+                                                  Navigator.pop(context, true),
+                                          child: const Text('Finalize Match'),
+                                        ),
+                                      ],
+                                    ),
+                              ) ??
+                              false;
+
+                          if (confirm) {
+                            final pts = _calculatePoints();
+                            await _matchService.setMatchOver(
+                              eventId,
+                              matchId,
+                              regularPoints: pts['a']!,
+                              bonusPoints: pts['aBonus']!,
+                            );
+                            await _loadData();
+
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Match has been finalized'),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                icon: Icon(_matchOver ? Icons.check_circle : Icons.sports_golf),
+                label: Text(_matchOver ? 'Match Complete' : 'Finalize Match'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _matchOver ? Colors.grey : Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
