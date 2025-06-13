@@ -23,27 +23,47 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   bool _bonus = false;
   bool _isAdmin = false;
   String _matchPlayType = 'match play';
+  // Change from String to List<String>
   List<String> _teamA = [];
   List<String> _teamB = [];
+  // Add new variables for team names and player info
+  String _teamAName = "Team A";
+  String _teamBName = "Team B";
+  List<Map<String, dynamic>> _teamAPlayerInfo = [];
+  List<Map<String, dynamic>> _teamBPlayerInfo = [];
   final Map<String, double> _handicaps = {};
   final Map<String, int> _strokeDiffs = {};
   final Map<String, int> _teamStrokeDiffs = {};
   final Map<int, int> _runningDiffs = {};
 
-  final List<int> pars = [
-    4,4,3,4,5,4,4,3,5,
-    4,5,3,4,4,4,3,4,5
-  ];
+  final List<int> pars = [4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5];
 
   final List<int> strokeIndex = [
-    18,8,2,10,4,14,6,16,12,
-    9,1,13,3,15,11,17,7,5
+    18,
+    8,
+    2,
+    10,
+    4,
+    14,
+    6,
+    16,
+    12,
+    9,
+    1,
+    13,
+    3,
+    15,
+    11,
+    17,
+    7,
+    5,
   ];
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+    final args =
+        ModalRoute.of(context)!.settings.arguments as Map<String, String>;
     eventId = args['eventId']!;
     matchId = args['matchId']!;
     _loadData();
@@ -56,12 +76,13 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         _results[i] = HoleResult.fromMap(data);
       }
     }
-    final matchDoc = await FirebaseFirestore.instance
-        .collection('events')
-        .doc(eventId)
-        .collection('matches')
-        .doc(matchId)
-        .get();
+    final matchDoc =
+        await FirebaseFirestore.instance
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .get();
     final matchData = matchDoc.data() ?? {};
     _matchOver = (matchData['matchOver'] ?? false) as bool;
     _bonus = matchData['bonusPoint'] ?? false;
@@ -69,13 +90,28 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     _teamA = List<String>.from(matchData['players']?['teamA'] ?? []);
     _teamB = List<String>.from(matchData['players']?['teamB'] ?? []);
 
+    // Fetch team names
+    if (matchData['teams'] != null &&
+        (matchData['teams'] as List).length >= 2) {
+      List<String> teams = List<String>.from(matchData['teams']);
+      if (teams.length >= 2) {
+        await _fetchTeamName(teams[0], true);
+        await _fetchTeamName(teams[1], false);
+      }
+    }
+
     final uid = _authService.currentUser?.uid;
-    final participantUids = List<String>.from(matchData['participantUids'] ?? []);
-    final DateTime scheduled = (matchData['matchDateTime'] as Timestamp).toDate();
-    final bool allowed = uid != null && participantUids.contains(uid) &&
+    final participantUids = List<String>.from(
+      matchData['participantUids'] ?? [],
+    );
+    final DateTime scheduled =
+        (matchData['matchDateTime'] as Timestamp).toDate();
+    final bool allowed =
+        uid != null &&
+        participantUids.contains(uid) &&
         DateUtils.isSameDay(scheduled, DateTime.now());
-    if(!allowed){
-      if(mounted){
+    if (!allowed) {
+      if (mounted) {
         Navigator.pop(context);
       }
       return;
@@ -84,6 +120,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     final userData = uid != null ? await _authService.getUserData(uid) : null;
     _isAdmin = userData?.role == 'admin';
 
+    // Now the spread operator works correctly with lists
     final toFetch = [..._teamA, ..._teamB];
     _handicaps.clear();
     for (final id in toFetch) {
@@ -123,13 +160,83 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       });
     }
 
+    // Fetch player information for initials
+    _teamAPlayerInfo = await _fetchPlayersInfo(_teamA);
+    _teamBPlayerInfo = await _fetchPlayersInfo(_teamB);
+
     _updateRunningResults();
     setState(() => _loading = false);
   }
 
+  // Add method to fetch team name
+  Future<void> _fetchTeamName(String teamId, bool isTeamA) async {
+    try {
+      final teamDoc =
+          await FirebaseFirestore.instance
+              .collection('events')
+              .doc(eventId)
+              .collection('teams')
+              .doc(teamId)
+              .get();
+
+      if (teamDoc.exists) {
+        final data = teamDoc.data();
+        if (data != null) {
+          final name =
+              data['teamName'] ??
+              data['name'] ??
+              (isTeamA ? 'Team A' : 'Team B');
+          setState(() {
+            if (isTeamA) {
+              _teamAName = name;
+            } else {
+              _teamBName = name;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching team name: $e');
+    }
+  }
+
+  // Add method to fetch player info for initials
+  Future<List<Map<String, dynamic>>> _fetchPlayersInfo(
+    List<String> playerIds,
+  ) async {
+    List<Map<String, dynamic>> result = [];
+    for (String id in playerIds) {
+      try {
+        final userDoc =
+            await FirebaseFirestore.instance.collection('users').doc(id).get();
+        if (userDoc.exists) {
+          final data = userDoc.data() as Map<String, dynamic>;
+          final firstName = data['firstName'] as String? ?? '';
+          final lastName = data['lastName'] as String? ?? '';
+          final initials =
+              (firstName.isNotEmpty ? firstName[0] : '') +
+              (lastName.isNotEmpty ? lastName[0] : '');
+          result.add({
+            'id': id,
+            'initials': initials.isNotEmpty ? initials : 'P',
+            'handicap': data['golfDetails']?['handicap'],
+          });
+        }
+      } catch (e) {
+        print('Error fetching player info: $e');
+      }
+    }
+    return result;
+  }
+
   Future<void> _setHoleResult(int hole, String res) async {
     final newRes = HoleResult(result: res);
-    await _matchService.updateHoleResult(eventId, matchId, hole, newRes.toMap());
+    await _matchService.updateHoleResult(
+      eventId,
+      matchId,
+      hole,
+      newRes.toMap(),
+    );
     _results[hole] = newRes;
     _updateRunningResults();
     if (mounted) setState(() {});
@@ -201,12 +308,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       if (bonusDiff < 0) bBonus = 0.5;
     }
 
-    return {
-      'a': aPoints,
-      'b': bPoints,
-      'aBonus': aBonus,
-      'bBonus': bBonus,
-    };
+    return {'a': aPoints, 'b': bPoints, 'aBonus': aBonus, 'bBonus': bBonus};
   }
 
   Widget _buildRow(int hole) {
@@ -219,14 +321,12 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     if (diff == 0) {
       bannerText = 'All Square';
     } else if (diff > 0) {
-      bannerText = diff > remaining
-          ? 'Team A wins $diff & $remaining'
-          : 'Team A +$diff';
+      bannerText =
+          diff > remaining ? 'Team A wins $diff & $remaining' : 'Team A +$diff';
     } else {
       final abs = -diff;
-      bannerText = abs > remaining
-          ? 'Team B wins $abs & $remaining'
-          : 'Team B +$abs';
+      bannerText =
+          abs > remaining ? 'Team B wins $abs & $remaining' : 'Team B +$abs';
     }
 
     final banner = Padding(
@@ -234,14 +334,16 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       child: Text(bannerText),
     );
 
-    final dotsA = _matchPlayType == 'greensome'
-        ? _dotsFor(_teamStrokeDiffs['A'] ?? 0, hole)
-        : _teamA.isNotEmpty
+    final dotsA =
+        _matchPlayType == 'greensome'
+            ? _dotsFor(_teamStrokeDiffs['A'] ?? 0, hole)
+            : _teamA.isNotEmpty
             ? _dotsFor(_strokeDiffs[_teamA.first] ?? 0, hole)
             : 0;
-    final dotsB = _matchPlayType == 'greensome'
-        ? _dotsFor(_teamStrokeDiffs['B'] ?? 0, hole)
-        : _teamB.isNotEmpty
+    final dotsB =
+        _matchPlayType == 'greensome'
+            ? _dotsFor(_teamStrokeDiffs['B'] ?? 0, hole)
+            : _teamB.isNotEmpty
             ? _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole)
             : 0;
 
@@ -267,33 +369,95 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       }
 
       return Row(
+        mainAxisSize: MainAxisSize.min, // Use minimum space required
         children: [
-          ToggleButtons(
-            isSelected: [index == 0, index == 1, index == 2],
-            onPressed: _matchOver && !_isAdmin
-                ? null
-                : (i) {
-                    String newRes;
-                    if (team == 'A') {
-                      if (i == 0) newRes = 'A';
-                      else if (i == 1) newRes = 'AS';
-                      else newRes = 'B';
-                    } else {
-                      if (i == 0) newRes = 'B';
-                      else if (i == 1) newRes = 'AS';
-                      else newRes = 'A';
-                    }
-                    _setHoleResult(hole, newRes);
-                  },
-            children: const [
-              Icon(Icons.check),
-              Icon(Icons.remove),
-              Icon(Icons.close),
-            ],
+          Flexible(
+            child: ToggleButtons(
+              isSelected: [index == 0, index == 1, index == 2],
+              onPressed:
+                  _matchOver && !_isAdmin
+                      ? null
+                      : (i) {
+                        String newRes;
+                        if (team == 'A') {
+                          if (i == 0)
+                            newRes = 'A';
+                          else if (i == 1)
+                            newRes = 'AS';
+                          else
+                            newRes = 'B';
+                        } else {
+                          if (i == 0)
+                            newRes = 'B';
+                          else if (i == 1)
+                            newRes = 'AS';
+                          else
+                            newRes = 'A';
+                        }
+                        _setHoleResult(hole, newRes);
+                      },
+              constraints: const BoxConstraints(
+                minWidth: 30,
+                minHeight: 36,
+              ), // Smaller constraints
+              children: const [
+                Icon(Icons.check, size: 18),
+                Icon(Icons.remove, size: 18),
+                Icon(Icons.close, size: 18),
+              ],
+            ),
           ),
-          if (dots > 0) Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text('•' * dots),
+          if (dots > 0)
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 2),
+                child: Text(
+                  '•' * dots,
+                  overflow: TextOverflow.ellipsis, // Handle overflow gracefully
+                  style: const TextStyle(fontSize: 12), // Smaller font size
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
+    // Create a widget for team header with name and player initials
+    Widget buildTeamHeader(
+      String teamName,
+      List<Map<String, dynamic>> players,
+    ) {
+      return Column(
+        children: [
+          Text(
+            teamName,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children:
+                players.map((player) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Tooltip(
+                      message: 'Handicap: ${player['handicap'] ?? 'N/A'}',
+                      child: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.blue.shade100,
+                        child: Text(
+                          player['initials'],
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ],
       );
@@ -301,17 +465,51 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
 
     return Column(
       children: [
+        // Add team headers before the card if this is the first hole
+        if (hole == 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              children: [
+                const SizedBox(width: 60), // Space for hole, par, SI
+                Expanded(
+                  flex: 5,
+                  child: buildTeamHeader(_teamAName, _teamAPlayerInfo),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  flex: 5,
+                  child: buildTeamHeader(_teamBName, _teamBPlayerInfo),
+                ),
+              ],
+            ),
+          ),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                SizedBox(width: 24, child: Text(hole.toString())),
-                SizedBox(width: 24, child: Text(pars[hole - 1].toString())),
-                SizedBox(width: 24, child: Text(strokeIndex[hole - 1].toString())),
-                Expanded(child: buildToggle('A', dotsA)),
-                const SizedBox(width: 8),
-                Expanded(child: buildToggle('B', dotsB)),
+                SizedBox(
+                  width: 20,
+                  child: Text(hole.toString()),
+                ), // Reduced width
+                SizedBox(
+                  width: 20,
+                  child: Text(pars[hole - 1].toString()),
+                ), // Reduced width
+                SizedBox(
+                  width: 20,
+                  child: Text(strokeIndex[hole - 1].toString()),
+                ), // Reduced width
+                Expanded(
+                  flex: 5, // Allocate more space for Team A
+                  child: buildToggle('A', dotsA),
+                ),
+                const SizedBox(width: 4), // Reduced spacing
+                Expanded(
+                  flex: 5, // Allocate more space for Team B
+                  child: buildToggle('B', dotsB),
+                ),
               ],
             ),
           ),
@@ -339,18 +537,19 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
-              onPressed: _matchOver && !_isAdmin
-                  ? null
-                  : () async {
-                      final pts = _calculatePoints();
-                      await _matchService.setMatchOver(
-                        eventId,
-                        matchId,
-                        regularPoints: pts['a']!,
-                        bonusPoints: pts['aBonus']!,
-                      );
-                      await _loadData();
-                    },
+              onPressed:
+                  _matchOver && !_isAdmin
+                      ? null
+                      : () async {
+                        final pts = _calculatePoints();
+                        await _matchService.setMatchOver(
+                          eventId,
+                          matchId,
+                          regularPoints: pts['a']!,
+                          bonusPoints: pts['aBonus']!,
+                        );
+                        await _loadData();
+                      },
               child: const Text('Match Over'),
             ),
           ),
