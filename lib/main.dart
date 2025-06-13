@@ -21,6 +21,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mgm_gc/pages/admin/match_management.dart';
 import 'package:mgm_gc/pages/league/join_team.dart';
 import 'package:mgm_gc/pages/league/match_scoring.dart';
+import 'package:mgm_gc/pages/live/live_scores_list.dart';
+import 'package:mgm_gc/pages/live/live_score_detail.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +64,8 @@ class MyApp extends StatelessWidget {
         '/match-management': (context) => const MatchManagementPage(),
         '/create-event': (context) => const EventCreationForm(),
         '/join-team': (context) => const JoinTeamPage(),
+        '/live-scores': (context) => const LiveScoresListPage(),
+        '/live-score-detail': (context) => const LiveScoreDetailPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/match_scoring') {
