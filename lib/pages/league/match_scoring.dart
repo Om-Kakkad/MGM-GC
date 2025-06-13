@@ -402,16 +402,16 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
 
     if (finalDiff > 0) {
       if (finalDiff > remaining) {
-        return '$_teamAName wins ${finalDiff} & ${remaining}';
+        return '$_teamAName wins $finalDiff & $remaining';
       } else {
-        return '$_teamAName +${finalDiff}';
+        return '$_teamAName +$finalDiff';
       }
     } else {
       final abs = -finalDiff;
       if (abs > remaining) {
-        return '$_teamBName wins ${abs} & ${remaining}';
+        return '$_teamBName wins $abs & $remaining';
       } else {
-        return '$_teamBName +${abs}';
+        return '$_teamBName +$abs';
       }
     }
   }
@@ -619,16 +619,16 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
                           : (i) {
                             String newRes;
                             if (team == 'A') {
-                              if (i == 0)
+                              if (i == 0) {
                                 newRes = 'A';
-                              else if (i == 1)
+                              } else if (i == 1)
                                 newRes = 'AS';
                               else
                                 newRes = 'B';
                             } else {
-                              if (i == 0)
+                              if (i == 0) {
                                 newRes = 'B';
-                              else if (i == 1)
+                              } else if (i == 1)
                                 newRes = 'AS';
                               else
                                 newRes = 'A';
@@ -797,7 +797,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
               children: [
                 Row(
                   children: [
-                    Container(
+                    SizedBox(
                       width: 60,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
