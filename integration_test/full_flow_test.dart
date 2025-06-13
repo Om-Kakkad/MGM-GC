@@ -99,6 +99,9 @@ void main() {
         await store.collection('users').doc(uid).set({
           'uid': uid,
           'email': email,
+          'firstName': 'Player', // Add first name
+          'lastName':
+              '${team.teamName} ${i + 1}', // Add last name with team context
           'role': 'league_player',
           'golfDetails': {
             'playingInLeague': true,
@@ -169,8 +172,14 @@ void main() {
     await createMatch(
       '4-ball',
       [teams[0].teamID!, teams[1].teamID!],
-      [playersByTeam[teams[0].teamID!]![0], playersByTeam[teams[0].teamID!]![1]],
-      [playersByTeam[teams[1].teamID!]![0], playersByTeam[teams[1].teamID!]![1]],
+      [
+        playersByTeam[teams[0].teamID!]![0],
+        playersByTeam[teams[0].teamID!]![1],
+      ],
+      [
+        playersByTeam[teams[1].teamID!]![0],
+        playersByTeam[teams[1].teamID!]![1],
+      ],
       0,
       'match play',
       false,
@@ -179,8 +188,14 @@ void main() {
     await createMatch(
       '4-ball',
       [teams[2].teamID!, teams[3].teamID!],
-      [playersByTeam[teams[2].teamID!]![0], playersByTeam[teams[2].teamID!]![1]],
-      [playersByTeam[teams[3].teamID!]![0], playersByTeam[teams[3].teamID!]![1]],
+      [
+        playersByTeam[teams[2].teamID!]![0],
+        playersByTeam[teams[2].teamID!]![1],
+      ],
+      [
+        playersByTeam[teams[3].teamID!]![0],
+        playersByTeam[teams[3].teamID!]![1],
+      ],
       1,
       'match play',
       true, // bonus enabled
@@ -208,15 +223,9 @@ void main() {
     final firstMatch = matchesSnapshot.docs.first;
     final matchId = firstMatch.id;
 
-    await matchService.updateHoleResult(eventId, matchId, 1, {
-      'result': 'A',
-    });
-    await matchService.updateHoleResult(eventId, matchId, 2, {
-      'result': 'A',
-    });
-    await matchService.updateHoleResult(eventId, matchId, 3, {
-      'result': 'B',
-    });
+    await matchService.updateHoleResult(eventId, matchId, 1, {'result': 'A'});
+    await matchService.updateHoleResult(eventId, matchId, 2, {'result': 'A'});
+    await matchService.updateHoleResult(eventId, matchId, 3, {'result': 'B'});
 
     final holeDoc =
         await store

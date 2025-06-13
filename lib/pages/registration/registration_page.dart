@@ -219,11 +219,16 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       child: _buildTextField(
                         controller: _firstNameController,
                         label: 'First Name',
-                        validator:
-                            (value) =>
-                                value == null || value.isEmpty
-                                    ? 'Please enter your first name'
-                                    : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your first name';
+                          }
+                          // Ensure first name doesn't contain spaces
+                          if (value.contains(' ')) {
+                            return 'First name should not contain spaces';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -231,11 +236,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                       child: _buildTextField(
                         controller: _lastNameController,
                         label: 'Last Name',
-                        validator:
-                            (value) =>
-                                value == null || value.isEmpty
-                                    ? 'Please enter your last name'
-                                    : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your last name';
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ],

@@ -201,13 +201,14 @@ class TestService {
         for (int playerNum = 1; playerNum <= 2; playerNum++) {
           final String playerEmail =
               'testplayer${teamIndex + 1}$playerNum@example.com';
-          final String playerName = 'Player ${teamIndex + 1}$playerNum';
+          final String playerFirstName = 'Test';
+          final String playerLastName = 'Player ${teamIndex + 1}$playerNum';
 
           // Create the Firestore document
           final userDoc = await _firestore.collection('users').add({
             'email': playerEmail,
-            'firstName': 'Test',
-            'lastName': playerName,
+            'firstName': playerFirstName,
+            'lastName': playerLastName,
             'role': 'league_player',
             'dateOfBirth': Timestamp.fromDate(
               DateTime.now().subtract(const Duration(days: 365 * 30)),

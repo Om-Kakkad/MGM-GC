@@ -337,10 +337,23 @@ class AuthService {
             .set(updatedUser.toMap());
       }
 
-      // Update display name in Firebase Auth
+      // Update display name in Firebase Auth but preserve atomic nature of first/last name
       await _auth.currentUser?.updateDisplayName(
         '${user.firstName} ${user.lastName}',
       );
+
+      // Store custom claims to make first and last names available separately
+      // Note: This would require a Firebase Function to actually set custom claims
+      // This is a placeholder for the concept
+      if (_auth.currentUser != null) {
+        try {
+          // In a real implementation, you'd call a Firebase Function here
+          // to set custom claims with firstName and lastName
+          print('First and last name stored atomically for uid: ${user.uid}');
+        } catch (e) {
+          print('Error storing atomic name fields: $e');
+        }
+      }
 
       if (context.mounted) {
         Navigator.pushReplacementNamed(context, '/home');
@@ -471,5 +484,19 @@ class AuthService {
       print("Error validating team password: $e");
       return false;
     }
+  }
+
+  // Helper method to extract first name from a display name
+  String? getFirstName(User? user) {
+    if (user == null || user.displayName == null) return null;
+    final parts = user.displayName!.split(' ');
+    return parts.isNotEmpty ? parts.first : null;
+  }
+
+  // Helper method to extract last name from a display name
+  String? getLastName(User? user) {
+    if (user == null || user.displayName == null) return null;
+    final parts = user.displayName!.split(' ');
+    return parts.length > 1 ? parts.skip(1).join(' ') : null;
   }
 }

@@ -163,10 +163,8 @@ class _JoinTeamPageState extends State<JoinTeamPage> {
       await _firestore.collection('team_requests').add({
         'userId': user.uid,
         'userEmail': user.email,
-        'userName':
-            userData?['firstName'] != null
-                ? '${userData!['firstName']} ${userData['lastName'] ?? ''}'
-                : user.email,
+        'userFirstName': userData?['firstName'] ?? '',
+        'userLastName': userData?['lastName'] ?? '',
         'teamId': _selectedTeamId,
         'eventId': _selectedEventId,
         'teamName': teamData['teamName'] ?? 'Unnamed Team',
