@@ -48,7 +48,10 @@ service cloud.firestore {
       
       // Matches subcollection rules
       match /matches/{matchId} {
-        allow read: if isAuthenticated();
+        allow read: if isAdmin() || (
+          isLeaguePlayer() &&
+          participants().hasAny([request.auth.uid])
+        );
         allow create: if isAdmin();
         function matchDoc() {
           return get(/databases/$(database)/documents/events/$(eventId)/matches/$(matchId));

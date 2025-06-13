@@ -347,6 +347,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
               .collection('events')
               .doc(eventId)
               .collection('matches')
+              .where('participantUids', arrayContains: userId)
               .where(
                 'matchDateTime',
                 isGreaterThanOrEqualTo: Timestamp.fromDate(today),
@@ -369,26 +370,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
           );
         }
 
-        List<DocumentSnapshot> userMatches = [];
-
-        // Filter matches that this user is part of
-        for (var match in snapshot.data!.docs) {
-          final matchData = match.data() as Map<String, dynamic>;
-          final players = matchData['players'] as Map<String, dynamic>?;
-
-          if (players != null) {
-            bool isUserInMatch = false;
-            players.forEach((teamKey, playerList) {
-              if (playerList is List && playerList.contains(userId)) {
-                isUserInMatch = true;
-              }
-            });
-
-            if (isUserInMatch) {
-              userMatches.add(match);
-            }
-          }
-        }
+        final userMatches = snapshot.data!.docs;
 
         if (userMatches.isEmpty) {
           return const Center(

@@ -15,6 +15,7 @@ class Match {
   final bool matchOver;
   final num regularPoints;
   final num bonusPoints;
+  final Map<String, List<int>> strokeMap;
 
   Match({
     this.matchID,
@@ -31,6 +32,7 @@ class Match {
     this.matchOver = false,
     this.regularPoints = 0,
     this.bonusPoints = 0,
+    this.strokeMap = const {},
   });
 
   Map<String, dynamic> toMap() {
@@ -48,6 +50,7 @@ class Match {
       'matchOver': matchOver,
       'regularPoints': regularPoints,
       'bonusPoints': bonusPoints,
+      'strokeMap': strokeMap,
     };
 
     // Add matchID if it exists
@@ -79,6 +82,11 @@ class Match {
       matchOver: map['matchOver'] ?? false,
       regularPoints: map['regularPoints'] ?? 0,
       bonusPoints: map['bonusPoints'] ?? 0,
+      strokeMap: Map<String, List<int>>.fromEntries(
+        (map['strokeMap'] ?? {}).entries.map(
+          (e) => MapEntry(e.key, List<int>.from(e.value ?? [])),
+        ),
+      ),
     );
   }
 }
