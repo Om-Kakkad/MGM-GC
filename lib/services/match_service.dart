@@ -420,4 +420,44 @@ class MatchService {
       return [];
     }
   }
+
+  Future<List<Map<String, dynamic>>> getMatchesByDate(DateTime date) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    try {
+      final events = await _firestore.collection('events').get();
+      List<Map<String, dynamic>> all = [];
+      for (final e in events.docs) {
+        final snapshot = await _firestore
+            .collection('events')
+            .doc(e.id)
+            .collection('matches')
+            .where('matchDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
+            .where('matchDateTime', isLessThan: Timestamp.fromDate(end))
+            .get();
+        for (final doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          data['eventId'] = e.id;
+          all.add(data);
+        }
+      }
+      return all;
+    } catch (e) {
+      print('Error fetching matches by date: $e');
+      return [];
+    }
+  }
+
+  Future<int> holeResultCount(String eventId, String matchId) async {
+    final snapshot = await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .collection('holeResults')
+        .limit(1)
+        .get();
+    return snapshot.docs.length;
+  }
 }
