@@ -165,75 +165,35 @@ void main() {
       await matchService.createMatch(match);
     }
 
-    // Two 2-ball matches - one match play, one greensome
+    // Create matches for scoring tests
     await createMatch(
-      '2-ball',
+      '4-ball',
       [teams[0].teamID!, teams[1].teamID!],
-      [playersByTeam[teams[0].teamID!]![0]],
-      [playersByTeam[teams[1].teamID!]![0]],
+      [playersByTeam[teams[0].teamID!]![0], playersByTeam[teams[0].teamID!]![1]],
+      [playersByTeam[teams[1].teamID!]![0], playersByTeam[teams[1].teamID!]![1]],
       0,
       'match play',
-      false, // No bonus point
-    );
-    await createMatch(
-      '2-ball',
-      [teams[2].teamID!, teams[3].teamID!],
-      [playersByTeam[teams[2].teamID!]![0]],
-      [playersByTeam[teams[3].teamID!]![0]],
-      1,
-      'greensome',
-      false, // No bonus point
+      false,
     );
 
-    // Four 4-ball matches - two match play, two greensome
+    await createMatch(
+      '4-ball',
+      [teams[2].teamID!, teams[3].teamID!],
+      [playersByTeam[teams[2].teamID!]![0], playersByTeam[teams[2].teamID!]![1]],
+      [playersByTeam[teams[3].teamID!]![0], playersByTeam[teams[3].teamID!]![1]],
+      1,
+      'match play',
+      true, // bonus enabled
+    );
+
     await createMatch(
       '4-ball',
       [teams[0].teamID!, teams[2].teamID!],
-      [
-        playersByTeam[teams[0].teamID!]![1],
-        playersByTeam[teams[0].teamID!]![2],
-      ],
-      [
-        playersByTeam[teams[2].teamID!]![1],
-        playersByTeam[teams[2].teamID!]![2],
-      ],
+      [playersByTeam[teams[0].teamID!]![2]],
+      [playersByTeam[teams[2].teamID!]![2]],
       2,
-      'match play',
-      true, // This match has a bonus point
-    );
-    await createMatch(
-      '4-ball',
-      [teams[1].teamID!, teams[3].teamID!],
-      [
-        playersByTeam[teams[1].teamID!]![1],
-        playersByTeam[teams[1].teamID!]![2],
-      ],
-      [
-        playersByTeam[teams[3].teamID!]![1],
-        playersByTeam[teams[3].teamID!]![2],
-      ],
-      3,
       'greensome',
-      false, // No bonus point
-    );
-
-    await createMatch(
-      '4-ball',
-      [teams[0].teamID!, teams[1].teamID!],
-      [playersByTeam[teams[0].teamID!]![0]],
-      [playersByTeam[teams[1].teamID!]![1]],
-      4,
-      'match play',
-      false, // No bonus point
-    );
-    await createMatch(
-      '4-ball',
-      [teams[2].teamID!, teams[3].teamID!],
-      [playersByTeam[teams[2].teamID!]![0]],
-      [playersByTeam[teams[3].teamID!]![1]],
-      5,
-      'greensome',
-      false, // No bonus point
+      false,
     );
 
     // verify matches count
@@ -243,15 +203,19 @@ void main() {
             .doc(eventId)
             .collection('matches')
             .get();
-    expect(matchesSnapshot.docs.length, 6);
+    expect(matchesSnapshot.docs.length, 3);
 
     final firstMatch = matchesSnapshot.docs.first;
     final matchId = firstMatch.id;
 
     await matchService.updateHoleResult(eventId, matchId, 1, {
-      'strokesA': 4,
-      'strokesB': 5,
-      'result': 'W',
+      'result': 'A',
+    });
+    await matchService.updateHoleResult(eventId, matchId, 2, {
+      'result': 'A',
+    });
+    await matchService.updateHoleResult(eventId, matchId, 3, {
+      'result': 'B',
     });
 
     final holeDoc =
@@ -264,12 +228,24 @@ void main() {
             .doc('1')
             .get();
     expect(holeDoc.exists, true);
-    expect(holeDoc['strokesA'], 4);
+    expect(holeDoc['result'], 'A');
+
+    final holeDoc2 =
+        await store
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .collection('holeResults')
+            .doc('2')
+            .get();
+    expect(holeDoc2.exists, true);
+    expect(holeDoc2['result'], 'A');
 
     await matchService.setMatchOver(
       eventId,
       matchId,
-      regularPoints: 2,
+      regularPoints: 4,
       bonusPoints: 0,
     );
 
@@ -281,6 +257,6 @@ void main() {
             .doc(matchId)
             .get();
     expect(updatedMatch['matchOver'], true);
-    expect(updatedMatch['regularPoints'], 2);
+    expect(updatedMatch['regularPoints'], 4);
   });
 }
