@@ -35,6 +35,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   final Map<String, int> _strokeDiffs = {};
   final Map<String, int> _teamStrokeDiffs = {};
   final Map<int, int> _runningDiffs = {};
+  Map<String, List<int>> _strokeMap = {};
 
   final List<int> pars = [4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5];
 
@@ -76,8 +77,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         _results[i] = HoleResult.fromMap(data);
       }
     }
-    final matchDoc =
-        await FirebaseFirestore.instance
+    final matchDoc = await FirebaseFirestore.instance
             .collection('events')
             .doc(eventId)
             .collection('matches')
@@ -89,6 +89,13 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     _matchPlayType = matchData['matchPlayType'] ?? 'match play';
     _teamA = List<String>.from(matchData['players']?['teamA'] ?? []);
     _teamB = List<String>.from(matchData['players']?['teamB'] ?? []);
+    _strokeMap = {};
+    if (matchData['strokeMap'] != null) {
+      final sm = Map<String, dynamic>.from(matchData['strokeMap']);
+      _strokeMap = {
+        for (final e in sm.entries) e.key: List<int>.from(e.value as List)
+      };
+    }
 
     // Fetch team names
     if (matchData['teams'] != null &&
@@ -158,6 +165,36 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       _handicaps.forEach((uid, h) {
         _strokeDiffs[uid] = (h - lowest).round();
       });
+    }
+
+    if (_strokeMap.isEmpty && !_matchOver) {
+      Map<String, List<int>> sm = {};
+      List<int> holesFor(int diff) {
+        final holes = <int>[];
+        if (diff <= 0) return holes;
+        final loops = diff ~/ 18;
+        final rem = diff % 18;
+        for (var i = 1; i <= 18; i++) {
+          var count = loops + (strokeIndex[i - 1] <= rem ? 1 : 0);
+          for (var j = 0; j < count; j++) {
+            holes.add(i);
+          }
+        }
+        return holes;
+      }
+      if (_matchPlayType == 'greensome') {
+        sm['A'] = holesFor(_teamStrokeDiffs['A'] ?? 0);
+        sm['B'] = holesFor(_teamStrokeDiffs['B'] ?? 0);
+      } else {
+        for (final id in _teamA) {
+          sm['A_$id'] = holesFor(_strokeDiffs[id] ?? 0);
+        }
+        for (final id in _teamB) {
+          sm['B_$id'] = holesFor(_strokeDiffs[id] ?? 0);
+        }
+      }
+      await _matchService.updateStrokeMap(eventId, matchId, sm);
+      _strokeMap = sm;
     }
 
     // Fetch player information for initials
@@ -334,18 +371,31 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       child: Text(bannerText),
     );
 
-    final dotsA =
-        _matchPlayType == 'greensome'
-            ? _dotsFor(_teamStrokeDiffs['A'] ?? 0, hole)
+    int dotsForSide(String team) {
+      if (_strokeMap.isNotEmpty) {
+        if (_matchPlayType == 'greensome') {
+          return _strokeMap[team]?.where((h) => h == hole).length ?? 0;
+        } else {
+          final players = team == 'A' ? _teamA : _teamB;
+          int d = 0;
+          for (final id in players) {
+            d += _strokeMap['${team}_$id']?.where((h) => h == hole).length ?? 0;
+          }
+          return d;
+        }
+      } else {
+        return _matchPlayType == 'greensome'
+            ? _dotsFor(_teamStrokeDiffs[team] ?? 0, hole)
             : _teamA.isNotEmpty
-            ? _dotsFor(_strokeDiffs[_teamA.first] ?? 0, hole)
-            : 0;
-    final dotsB =
-        _matchPlayType == 'greensome'
-            ? _dotsFor(_teamStrokeDiffs['B'] ?? 0, hole)
-            : _teamB.isNotEmpty
-            ? _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole)
-            : 0;
+                ? (team == 'A'
+                    ? _dotsFor(_strokeDiffs[_teamA.first] ?? 0, hole)
+                    : _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole))
+                : 0;
+      }
+    }
+
+    final dotsA = dotsForSide('A');
+    final dotsB = dotsForSide('B');
 
     Widget buildToggle(String team, int dots) {
       final current = res?.result ?? 'AS';

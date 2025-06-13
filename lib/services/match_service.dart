@@ -239,6 +239,19 @@ class MatchService {
     });
   }
 
+  Future<void> updateStrokeMap(
+    String eventId,
+    String matchId,
+    Map<String, List<int>> strokeMap,
+  ) async {
+    await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('matches')
+        .doc(matchId)
+        .update({'strokeMap': strokeMap});
+  }
+
   // Update team documents with matchId
   Future<void> _updateTeamsWithMatch(
     String eventId,
