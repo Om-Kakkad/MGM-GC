@@ -17,7 +17,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
 
   late String eventId;
   late String matchId;
-  Map<int, HoleResult> _results = {};
+  final Map<int, HoleResult> _results = {};
   bool _loading = true;
   bool _matchOver = false;
 
