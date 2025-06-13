@@ -178,8 +178,12 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
         if (h < lowB) lowB = h;
         if (h > highB) highB = h;
       }
+      // Calculate pair handicaps using the formula: 0.6 × low + 0.4 × high
+      // Using round() which rounds up for fractions >= 0.5
       int pairA = ((0.6 * lowA) + (0.4 * highA)).round();
       int pairB = ((0.6 * lowB) + (0.4 * highB)).round();
+
+      // Find the lower handicap pair to calculate stroke differences
       int lowPair = pairA < pairB ? pairA : pairB;
       _teamStrokeDiffs['A'] = pairA - lowPair;
       _teamStrokeDiffs['B'] = pairB - lowPair;
@@ -277,8 +281,9 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
           final firstName = data['firstName'] as String? ?? '';
           final lastName = data['lastName'] as String? ?? '';
           final initials =
-              (firstName.isNotEmpty ? firstName[0] : '') +
-              (lastName.isNotEmpty ? lastName[0] : '');
+              ((firstName.isNotEmpty ? firstName[0] : '') +
+                      (lastName.isNotEmpty ? lastName[0] : ''))
+                  .toUpperCase();
           result.add({
             'id': id,
             'initials': initials.isNotEmpty ? initials : 'P',
@@ -453,6 +458,7 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
     int dotsForSide(String team) {
       if (_strokeMap.isNotEmpty) {
         if (_matchPlayType == 'greensome') {
+          // For greensome, get strokes directly from the stroke map
           return _strokeMap[team]?.where((h) => h == hole).length ?? 0;
         } else {
           final players = team == 'A' ? _teamA : _teamB;
@@ -471,6 +477,96 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
                 : _dotsFor(_strokeDiffs[_teamB.first] ?? 0, hole))
             : 0;
       }
+    }
+
+    // New function to get formatted stroke text for a specific team
+    String getStrokeText(String team) {
+      final playerInfoList = team == 'A' ? _teamAPlayerInfo : _teamBPlayerInfo;
+      final players = team == 'A' ? _teamA : _teamB;
+
+      if (_matchPlayType == 'greensome') {
+        // For greensome, we need to show strokes for the pair
+        final dots = dotsForSide(team);
+        if (dots <= 0) return '';
+
+        // Return a simpler format for greensome
+        return "Pair: ${dots == 1 ? '1 stroke' : '$dots strokes'}";
+      } else {
+        // For match play (4-ball, 2-ball), show individual player strokes
+        final playerStrokes = <String, int>{};
+
+        if (_strokeMap.isNotEmpty) {
+          for (int i = 0; i < players.length; i++) {
+            final playerId = players[i];
+            final count =
+                _strokeMap['${team}_$playerId']
+                    ?.where((h) => h == hole)
+                    .length ??
+                0;
+            if (count > 0) {
+              final playerInfo = playerInfoList.firstWhere(
+                (info) => info['id'] == playerId,
+                orElse: () => {'initials': 'P$i'},
+              );
+              playerStrokes[playerInfo['initials']] = count;
+            }
+          }
+        } else {
+          // Fallback to simpler logic if stroke map is not available
+          for (
+            int i = 0;
+            i < players.length && i < playerInfoList.length;
+            i++
+          ) {
+            final playerId = players[i];
+            final playerInfo = playerInfoList[i];
+            final count = _dotsFor(_strokeDiffs[playerId] ?? 0, hole);
+            if (count > 0) {
+              playerStrokes[playerInfo['initials']] = count;
+            }
+          }
+        }
+
+        // Format the stroke text
+        if (playerStrokes.isEmpty) return '';
+
+        if (playerStrokes.length == playerInfoList.length &&
+            playerStrokes.values.every(
+              (v) => v == playerStrokes.values.first,
+            )) {
+          // All players get the same number of strokes
+          final count = playerStrokes.values.first;
+          return "All: ${count == 1 ? '1 each' : '$count each'}";
+        } else {
+          // Some players get different numbers of strokes
+          return playerStrokes.entries
+              .map((e) => "${e.key}: ${e.value == 1 ? '1' : e.value}")
+              .join(' & ');
+        }
+      }
+    }
+
+    // Get stroke text for both teams
+    final strokeTextA = getStrokeText('A');
+    final strokeTextB = getStrokeText('B');
+
+    // Combine stroke text if both teams have strokes
+    String combinedStrokeText = '';
+    if (strokeTextA.isNotEmpty && strokeTextB.isNotEmpty) {
+      combinedStrokeText = '$strokeTextA | $strokeTextB';
+    } else if (strokeTextA.isNotEmpty) {
+      combinedStrokeText = strokeTextA;
+    } else if (strokeTextB.isNotEmpty) {
+      combinedStrokeText = strokeTextB;
+    }
+
+    // Create accessibility message
+    String accessibilityMessage = '';
+    if (strokeTextA.isNotEmpty) {
+      accessibilityMessage += 'Team $_teamAName: $strokeTextA. ';
+    }
+    if (strokeTextB.isNotEmpty) {
+      accessibilityMessage += 'Team $_teamBName: $strokeTextB.';
     }
 
     final dotsA = dotsForSide('A');
@@ -498,6 +594,15 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
           index = 2; // Loss (A wins)
         }
       }
+
+      // Get stroke text for this team
+      final strokeText = getStrokeText(team);
+
+      // Create accessibility message for this team
+      final String accessibilityMessage =
+          strokeText.isNotEmpty
+              ? 'Team ${team == 'A' ? _teamAName : _teamBName}: $strokeText'
+              : '';
 
       return Column(
         children: [
@@ -570,17 +675,49 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
               ),
             ],
           ),
-          if (dots > 0)
+
+          // Show stroke information based on match type
+          if (_matchPlayType == 'greensome') ...[
+            // For greensome, check directly if there are strokes for this hole
+            if (dots > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Tooltip(
+                  message:
+                      'Team ${team == 'A' ? _teamAName : _teamBName} receives $dots stroke${dots != 1 ? 's' : ''}',
+                  child: Text(
+                    "Pair: ${dots == 1 ? '1 stroke' : '$dots strokes'}",
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color:
+                          team == 'A'
+                              ? Colors.blue.withOpacity(0.8)
+                              : Colors.orange.withOpacity(0.8),
+                      fontWeight: FontWeight.bold, // Make more visible
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ] else if (strokeText.isNotEmpty) ...[
+            // For match play, use the existing stroke text
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '●' * dots,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: team == 'A' ? Colors.blue : Colors.orange,
+              child: Tooltip(
+                message: accessibilityMessage,
+                child: Text(
+                  strokeText,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color:
+                        team == 'A'
+                            ? Colors.blue.withOpacity(0.8)
+                            : Colors.orange.withOpacity(0.8),
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
+          ],
         ],
       );
     }

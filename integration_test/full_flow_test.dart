@@ -96,6 +96,20 @@ void main() {
           password: password,
         );
         final uid = cred.user!.uid;
+
+        // Assign handicaps so each team has one low, one mid, and one high handicap player
+        double handicap;
+        if (i == 0) {
+          // Low handicap range (0-8)
+          handicap = 2.0 + teams.indexOf(team) * 2.0; // 2, 4, 6, 8
+        } else if (i == 1) {
+          // Mid handicap range (9-16)
+          handicap = 10.0 + teams.indexOf(team) * 1.5; // 10, 11.5, 13, 14.5
+        } else {
+          // High handicap range (17-24)
+          handicap = 18.0 + teams.indexOf(team) * 1.5; // 18, 19.5, 21, 22.5
+        }
+
         await store.collection('users').doc(uid).set({
           'uid': uid,
           'email': email,
@@ -108,6 +122,7 @@ void main() {
             'teamId': team.teamID,
             'teamName': team.teamName,
             'eventId': eventId,
+            'handicap': handicap, // Balanced handicap distribution
           },
           'createdAt': Timestamp.now(),
           'updatedAt': Timestamp.now(),
