@@ -38,7 +38,7 @@ class _LiveScoreDetailPageState extends State<LiveScoreDetailPage> {
   late String eventId;
   late String matchId;
   bool _loading = true;
-  Map<int, String> _results = {};
+  final Map<int, String> _results = {};
   String _teamAId = '';
   String _teamBId = '';
   String _teamAName = 'Team A';

@@ -436,7 +436,7 @@ class MatchService {
             .where('matchDateTime', isLessThan: Timestamp.fromDate(end))
             .get();
         for (final doc in snapshot.docs) {
-          final data = doc.data() as Map<String, dynamic>;
+          final data = doc.data();
           data['id'] = doc.id;
           data['eventId'] = e.id;
           all.add(data);

@@ -158,11 +158,13 @@ class _LiveScoresListPageState extends State<LiveScoresListPage> {
               .expand((p) => List<String>.from(p as List))
               .toList();
       if (_selectedTeams.isNotEmpty &&
-          !_selectedTeams.any((t) => teams.contains(t)))
+          !_selectedTeams.any((t) => teams.contains(t))) {
         return false;
+      }
       if (_selectedPlayers.isNotEmpty &&
-          !_selectedPlayers.any((p) => players.contains(p)))
+          !_selectedPlayers.any((p) => players.contains(p))) {
         return false;
+      }
       return true;
     }).toList();
   }
