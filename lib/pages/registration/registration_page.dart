@@ -136,7 +136,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       );
 
       // Save user to Firestore
-      await _authService.saveUserProfile(
+      bool success = await _authService.saveUserProfile(
         user: userModel,
         context: context,
         teamPassword: _playingInLeague ? _teamPasswordController.text : null,
@@ -145,6 +145,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
       setState(() {
         _isLoading = false;
       });
+
+      if (success) {
+        Fluttertoast.showToast(
+          msg: _playingInLeague
+              ? 'Profile saved! Your join request has been submitted.'
+              : 'Profile saved successfully.',
+          toastLength: Toast.LENGTH_LONG,
+        );
+      }
     }
   }
 

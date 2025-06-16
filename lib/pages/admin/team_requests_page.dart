@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class TeamRequestsPage extends StatelessWidget {
+class TeamRequestsPage extends StatefulWidget {
   const TeamRequestsPage({super.key});
+
+  @override
+  State<TeamRequestsPage> createState() => _TeamRequestsPageState();
+}
+
+class _TeamRequestsPageState extends State<TeamRequestsPage> {
+  String? _selectedTeam;
 
   @override
   Widget build(BuildContext context) {
@@ -23,12 +30,11 @@ class TeamRequestsPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream:
-            FirebaseFirestore.instance
-                .collection('team_requests')
-                .where('status', isEqualTo: 'pending')
-                .orderBy('requestDate', descending: true)
-                .snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('team_requests')
+            .where('status', isEqualTo: 'pending')
+            .orderBy('requestDate', descending: true)
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -44,12 +50,49 @@ class TeamRequestsPage extends StatelessWidget {
             return const Center(child: Text('No pending team join requests'));
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: requests.length,
-            itemBuilder: (context, index) {
-              final request = requests[index].data() as Map<String, dynamic>;
-              final requestId = requests[index].id;
+          final teamNames = <String>{};
+          for (var doc in requests) {
+            final data = doc.data() as Map<String, dynamic>;
+            if (data['teamName'] != null) {
+              teamNames.add(data['teamName']);
+            }
+          }
+
+          final filtered = _selectedTeam == null
+              ? requests
+              : requests.where((d) =>
+                  (d.data() as Map<String, dynamic>)['teamName'] == _selectedTeam)
+                  .toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: DropdownButton<String>(
+                  value: _selectedTeam ?? 'All Teams',
+                  items: ['All Teams', ...teamNames]
+                      .map(
+                        (name) => DropdownMenuItem(
+                          value: name,
+                          child: Text(name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTeam = value == 'All Teams' ? null : value;
+                    });
+                  },
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final request =
+                        filtered[index].data() as Map<String, dynamic>;
+                    final requestId = filtered[index].id;
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -93,6 +136,7 @@ class TeamRequestsPage extends StatelessWidget {
                                   request['userId'],
                                   request['teamId'],
                                   request['eventId'],
+                                  request['teamName'],
                                 ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xff0D6EFD),
@@ -109,7 +153,7 @@ class TeamRequestsPage extends StatelessWidget {
                 ),
               );
             },
-          );
+          ),
         },
       ),
     );
@@ -132,6 +176,7 @@ class TeamRequestsPage extends StatelessWidget {
     String userId,
     String teamId,
     String eventId,
+    String teamName,
   ) async {
     try {
       final firestore = FirebaseFirestore.instance;
@@ -139,9 +184,13 @@ class TeamRequestsPage extends StatelessWidget {
       // Start a batch operation
       final batch = firestore.batch();
 
-      // 1. Update user role to league_player
+      // 1. Update user role and golf details
       batch.update(firestore.collection('users').doc(userId), {
         'role': 'league_player',
+        'golfDetails.teamId': teamId,
+        'golfDetails.teamName': teamName,
+        'golfDetails.eventId': eventId,
+        'golfDetails.playingInLeague': true,
       });
 
       // 2. Add user to team's players array

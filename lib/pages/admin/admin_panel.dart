@@ -132,6 +132,18 @@ class _AdminPanelState extends State<AdminPanel>
                       },
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // Team Join Requests Card
+                    _buildAdminCard(
+                      title: 'Team Join Requests',
+                      description: 'Approve or reject player requests to join teams',
+                      icon: Icons.inbox,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/team-requests');
+                      },
+                    ),
+
                     // ...other admin features...
                   ],
                 ),
