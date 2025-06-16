@@ -19,6 +19,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mgm_gc/pages/admin/match_management.dart';
+import 'package:mgm_gc/pages/admin/sponsor_management.dart';
 import 'package:mgm_gc/pages/league/join_team.dart';
 import 'package:mgm_gc/pages/league/match_scoring.dart';
 import 'package:mgm_gc/pages/live/live_scores_list.dart';
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
         '/team-management': (context) => const TeamManagementPage(),
         '/event-management': (context) => const EventManagementPage(),
         '/match-management': (context) => const MatchManagementPage(),
+        '/sponsor-management': (context) => const SponsorManagementPage(),
         '/team-requests': (context) => const TeamRequestsPage(),
         '/create-event': (context) => const EventCreationForm(),
         '/join-team': (context) => const JoinTeamPage(),
