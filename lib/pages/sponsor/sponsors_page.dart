@@ -17,7 +17,7 @@ class _SponsorsPageState extends State<SponsorsPage> {
   @override
   void initState() {
     super.initState();
-    _sponsorsFuture = _sponsorService.getSponsors();
+    _sponsorsFuture = _sponsorService.getAllSponsors();
   }
 
   Future<void> _launchWebsite(String url) async {
@@ -59,7 +59,7 @@ class _SponsorsPageState extends State<SponsorsPage> {
                     height: 60,
                     child: Image.network(sponsor.logoUrl),
                   ),
-                  title: Text(sponsor.name),
+                  title: Text(sponsor.sponsorName),
                   subtitle: Text(sponsor.area),
                 ),
               );

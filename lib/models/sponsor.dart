@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Sponsor {
   final String? id;
@@ -23,7 +22,7 @@ class Sponsor {
       'websiteUrl': websiteUrl,
     };
     if (id != null) {
-      map['id'] = id;
+      map['id'] = id!;
     }
     return map;
   }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../services/sponsor_service.dart';
 
 class SponsorSplash extends StatefulWidget {
   const SponsorSplash({super.key});
@@ -9,7 +10,7 @@ class SponsorSplash extends StatefulWidget {
 }
 
 class _SponsorSplashState extends State<SponsorSplash> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SponsorService _sponsorService = SponsorService();
   List<String> _logos = [];
   bool _loading = true;
 
@@ -21,14 +22,12 @@ class _SponsorSplashState extends State<SponsorSplash> {
 
   Future<void> _loadSponsors() async {
     try {
-      final snapshot = await _firestore.collection('sponsors').get();
-      _logos = snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>?;
-            return data?['logoUrl'] as String? ?? '';
-          })
-          .where((url) => url.isNotEmpty)
-          .toList();
+      final sponsors = await _sponsorService.getAllSponsors();
+      _logos =
+          sponsors
+              .map((sponsor) => sponsor.logoUrl)
+              .where((url) => url.isNotEmpty)
+              .toList();
     } catch (e) {
       // ignore errors, just show empty screen
       debugPrint('Error loading sponsors: $e');
@@ -47,17 +46,14 @@ class _SponsorSplashState extends State<SponsorSplash> {
   @override
   Widget build(BuildContext context) {
     if (_loading && _logos.isEmpty) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final crossAxisCount = _logos.isEmpty
-              ? 1
-              : (_logos.length <= 3 ? _logos.length : 3);
+          final crossAxisCount =
+              _logos.isEmpty ? 1 : (_logos.length <= 3 ? _logos.length : 3);
           final double tileSize = constraints.maxWidth / crossAxisCount;
 
           return GridView.builder(
@@ -73,10 +69,7 @@ class _SponsorSplashState extends State<SponsorSplash> {
                 child: SizedBox(
                   width: tileSize * 0.8,
                   height: tileSize * 0.8,
-                  child: Image.network(
-                    logoUrl,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.network(logoUrl, fit: BoxFit.contain),
                 ),
               );
             },
@@ -86,4 +79,3 @@ class _SponsorSplashState extends State<SponsorSplash> {
     );
   }
 }
-
