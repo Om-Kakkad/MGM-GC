@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:mgm_gc/models/user_model.dart';
 import 'package:mgm_gc/services/auth_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class RegistrationPage extends StatefulWidget {
   final User user;
@@ -148,9 +149,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
       if (success) {
         Fluttertoast.showToast(
-          msg: _playingInLeague
-              ? 'Profile saved! Your join request has been submitted.'
-              : 'Profile saved successfully.',
+          msg:
+              _playingInLeague
+                  ? 'Profile saved! Your join request has been submitted.'
+                  : 'Profile saved successfully.',
           toastLength: Toast.LENGTH_LONG,
         );
       }
