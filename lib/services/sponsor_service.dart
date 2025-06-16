@@ -3,29 +3,32 @@ import '../models/sponsor.dart';
 
 class SponsorService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  Future<String?> _getActiveEventId() async {
-    try {
-      final doc = await _firestore.collection('config').doc('activeEvent').get();
-      return doc.data()?['eventId'] as String?;
-    } catch (e) {
-      print('Error fetching active event id: $e');
-      return null;
-    }
+  Future<String> addSponsor(String eventId, Sponsor sponsor) async {
+    final ref = await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('sponsors')
+        .add(sponsor.toMap());
+    return ref.id;
   }
 
-  Future<List<Sponsor>> getSponsors() async {
-    try {
-      final eventId = await _getActiveEventId();
-      if (eventId == null) return [];
-      final snapshot = await _firestore
-          .collection('sponsors')
-          .where('eventId', isEqualTo: eventId)
-          .get();
-      return snapshot.docs.map((d) => Sponsor.fromFirestore(d)).toList();
-    } catch (e) {
-      print('Error fetching sponsors: $e');
-      return [];
-    }
+  Stream<List<Sponsor>> getSponsors(String eventId) {
+    return _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('sponsors')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Sponsor.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Future<void> deleteSponsor(String eventId, String sponsorId) async {
+    await _firestore
+        .collection('events')
+        .doc(eventId)
+        .collection('sponsors')
+        .doc(sponsorId)
+        .delete();
   }
 }

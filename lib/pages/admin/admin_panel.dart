@@ -144,6 +144,18 @@ class _AdminPanelState extends State<AdminPanel>
                       },
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // Sponsor Management Card
+                    _buildAdminCard(
+                      title: 'Sponsor Management',
+                      description: 'Manage event sponsors',
+                      icon: Icons.handshake,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/sponsor-management');
+                      },
+                    ),
+
                     // ...other admin features...
                   ],
                 ),
