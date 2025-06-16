@@ -103,6 +103,15 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(context, '/live-scores');
               },
             ),
+            // Sponsors menu item - available for all users
+            ListTile(
+              title: const Text('Sponsors'),
+              leading: const Icon(Icons.business),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/sponsors');
+              },
+            ),
             // Admin-specific menu items
             if (_currentUser?.role == 'admin') ...[
               ListTile(
