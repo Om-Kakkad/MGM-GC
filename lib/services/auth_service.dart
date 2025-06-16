@@ -205,116 +205,40 @@ class AuthService {
           return false;
         }
 
-        // If the team password is correct, update the role to league_player
-        if (correctPassword == teamPassword && eventId != null) {
-          // Get the associated event for the team to determine brackets
-          String? assignedBracket;
-
-          // Try to determine the player's bracket if they have a handicap
-          if (user.golfDetails.handicap != null) {
-            // Fetch the event document to get bracket definitions
-            final eventDoc =
-                await _firestore.collection('events').doc(eventId).get();
-
-            if (eventDoc.exists) {
-              final eventData = eventDoc.data();
-              final brackets = eventData?['brackets'];
-
-              if (brackets != null) {
-                // Check which bracket the player falls into based on handicap
-                final double handicap = user.golfDetails.handicap!;
-
-                // Check gold bracket
-                final goldBracket = brackets['gold'];
-                if (goldBracket != null &&
-                    handicap >= goldBracket['minHandicap'] &&
-                    handicap <= goldBracket['maxHandicap']) {
-                  assignedBracket = 'gold';
-                }
-
-                // Check silver bracket
-                final silverBracket = brackets['silver'];
-                if (silverBracket != null &&
-                    handicap >= silverBracket['minHandicap'] &&
-                    handicap <= silverBracket['maxHandicap']) {
-                  assignedBracket = 'silver';
-                }
-
-                // Check bronze bracket
-                final bronzeBracket = brackets['bronze'];
-                if (bronzeBracket != null &&
-                    handicap >= bronzeBracket['minHandicap'] &&
-                    handicap <= bronzeBracket['maxHandicap']) {
-                  assignedBracket = 'bronze';
-                }
-              }
-            }
-          }
-
-          // Create a new user model with the updated role and bracket
-          // BUT preserve admin role if it was set
-          final updatedUser = UserModel(
-            uid: user.uid,
-            email: user.email,
-            role:
-                role == 'admin'
-                    ? 'admin'
-                    : 'league_player', // Keep admin role if present
-            firstName: user.firstName,
-            lastName: user.lastName,
-            dateOfBirth: user.dateOfBirth,
-            gender: user.gender,
-            phoneNumber: user.phoneNumber,
-            golfDetails: GolfDetails(
-              handicap: user.golfDetails.handicap,
-              isMember: user.golfDetails.isMember,
-              membershipId: user.golfDetails.membershipId,
-              playingInLeague: user.golfDetails.playingInLeague,
-              teamId: user.golfDetails.teamId,
-              teamName: user.golfDetails.teamName,
-              eventId: eventId, // Store event ID in user's golf details
-              bracket: assignedBracket, // Add bracket assignment
-            ),
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-          );
-
-          // Save the updated user model
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .set(updatedUser.toMap());
-
-          // Add the user to the team's players array
-          await _firestore
-              .collection('events')
-              .doc(eventId)
-              .collection('teams')
-              .doc(user.golfDetails.teamId)
-              .update({
-                'players': FieldValue.arrayUnion([user.uid]),
-              });
-        } else {
-          // Save original user data to Firestore, but with preserved admin role if it exists
-          final updatedUser = UserModel(
-            uid: user.uid,
-            email: user.email,
-            role: role, // Use the preserved role (admin or user)
-            firstName: user.firstName,
-            lastName: user.lastName,
-            dateOfBirth: user.dateOfBirth,
-            gender: user.gender,
-            phoneNumber: user.phoneNumber,
-            golfDetails: user.golfDetails,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-          );
-
-          await _firestore
-              .collection('users')
-              .doc(user.uid)
-              .set(updatedUser.toMap());
+        // If the password is correct, create a team join request instead of
+        // immediately updating the user's role or team document
+        if (eventId != null) {
+          await _firestore.collection('team_requests').add({
+            'userId': user.uid,
+            'userEmail': user.email,
+            'userName': '${user.firstName} ${user.lastName}',
+            'teamId': user.golfDetails.teamId,
+            'eventId': eventId,
+            'teamName': user.golfDetails.teamName,
+            'requestDate': FieldValue.serverTimestamp(),
+            'status': 'pending',
+          });
         }
+
+        // Save the user profile with the original role (admin or user)
+        final updatedUser = UserModel(
+          uid: user.uid,
+          email: user.email,
+          role: role, // keep existing role (admin or user)
+          firstName: user.firstName,
+          lastName: user.lastName,
+          dateOfBirth: user.dateOfBirth,
+          gender: user.gender,
+          phoneNumber: user.phoneNumber,
+          golfDetails: user.golfDetails,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        );
+
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .set(updatedUser.toMap());
       } else {
         // Save original user data to Firestore, but with preserved admin role if it exists
         final updatedUser = UserModel(

@@ -23,6 +23,7 @@ import 'package:mgm_gc/pages/league/join_team.dart';
 import 'package:mgm_gc/pages/league/match_scoring.dart';
 import 'package:mgm_gc/pages/live/live_scores_list.dart';
 import 'package:mgm_gc/pages/live/live_score_detail.dart';
+import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,7 @@ class MyApp extends StatelessWidget {
         '/team-management': (context) => const TeamManagementPage(),
         '/event-management': (context) => const EventManagementPage(),
         '/match-management': (context) => const MatchManagementPage(),
+        '/team-requests': (context) => const TeamRequestsPage(),
         '/create-event': (context) => const EventCreationForm(),
         '/join-team': (context) => const JoinTeamPage(),
         '/live-scores': (context) => const LiveScoresListPage(),
