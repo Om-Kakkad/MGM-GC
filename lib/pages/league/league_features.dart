@@ -52,20 +52,19 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
     return Scaffold(
       appBar: AppBar(title: const Text('League Features')),
       body: DefaultTabController(
-        length: 5, // Change from 4 to 5 tabs
+        length: 6, // Change from 5 to 6 tabs (adding Sponsors)
         child: Column(
           children: [
             TabBar(
               labelColor: Theme.of(context).primaryColor,
+              isScrollable: true, // Make tabs scrollable to fit all tabs
               tabs: const [
                 Tab(icon: Icon(Icons.event), text: 'Upcoming Events'),
                 Tab(icon: Icon(Icons.leaderboard), text: 'Leaderboard'),
                 Tab(icon: Icon(Icons.people), text: 'My Team'),
                 Tab(icon: Icon(Icons.sports_golf), text: 'Scoring'),
-                Tab(
-                  icon: Icon(Icons.scoreboard),
-                  text: 'Live Scores',
-                ), // New tab
+                Tab(icon: Icon(Icons.scoreboard), text: 'Live Scores'),
+                Tab(icon: Icon(Icons.business), text: 'Sponsors'), // New tab
               ],
             ),
             Expanded(
@@ -75,7 +74,8 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                   _buildLeaderboardTab(),
                   _buildTeamTab(),
                   _buildScoringTab(),
-                  _buildLiveScoresTab(), // New tab view
+                  _buildLiveScoresTab(),
+                  _buildSponsorsTab(), // New tab view
                 ],
               ),
             ),
@@ -448,6 +448,43 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
             ),
             onPressed: () {
               Navigator.pushNamed(context, '/live-scores');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Add a new method for the Sponsors tab
+  Widget _buildSponsorsTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.business, size: 64, color: Colors.blue),
+          const SizedBox(height: 16),
+          const Text(
+            'View Our Sponsors',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Check out the sponsors supporting our events',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.visibility),
+            label: const Text('View Sponsors'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff0D6EFD),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/sponsors');
             },
           ),
         ],

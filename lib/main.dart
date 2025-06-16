@@ -14,6 +14,7 @@ import 'package:mgm_gc/pages/admin/team_management.dart';
 import 'package:mgm_gc/pages/admin/event_management.dart';
 import 'package:mgm_gc/pages/admin/event_creation_form.dart';
 import 'package:mgm_gc/pages/league/league_features.dart';
+import 'package:mgm_gc/pages/league/user_league_features.dart';
 import 'package:mgm_gc/pages/events/events_list.dart';
 import 'package:mgm_gc/pages/events/event_details.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomePage(),
         '/admin': (context) => AdminPanel(),
         '/league': (context) => LeagueFeatures(),
+        '/user-league': (context) => const UserLeagueFeatures(),
         '/events': (context) => const EventsListPage(),
         '/event-details': (context) => const EventDetailsPage(),
         '/create-match': (context) => const MatchCreationForm(),

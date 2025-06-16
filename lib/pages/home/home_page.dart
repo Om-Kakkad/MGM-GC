@@ -94,15 +94,6 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(context, '/events');
               },
             ),
-            // Live Scores menu item - available for all users
-            ListTile(
-              title: const Text('Live Scores'),
-              leading: const Icon(Icons.scoreboard),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/live-scores');
-              },
-            ),
             // Sponsors menu item - available for all users
             ListTile(
               title: const Text('Sponsors'),
@@ -112,6 +103,18 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(context, '/sponsors');
               },
             ),
+            // League Features for regular users
+            if (_currentUser?.role != 'league_player' &&
+                _currentUser?.role != 'admin') ...[
+              ListTile(
+                title: const Text('League Features'),
+                leading: const Icon(Icons.sports_golf),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/user-league');
+                },
+              ),
+            ],
             // Admin-specific menu items
             if (_currentUser?.role == 'admin') ...[
               ListTile(
