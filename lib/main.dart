@@ -3,6 +3,7 @@ import 'package:mgm_gc/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:mgm_gc/pages/login/login.dart';
+import 'package:mgm_gc/pages/splash/sponsor_splash.dart';
 import 'package:mgm_gc/pages/signup/signup.dart';
 import 'package:mgm_gc/pages/home/home_page.dart';
 import 'package:mgm_gc/pages/admin/admin_panel.dart';
@@ -50,8 +51,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/login',
+      initialRoute: '/splash',
       routes: {
+        '/splash': (context) => const SponsorSplash(),
         '/login': (context) => Login(),
         '/signup': (context) => Signup(),
         '/home': (context) => HomePage(),
