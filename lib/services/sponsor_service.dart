@@ -3,7 +3,6 @@ import '../models/sponsor.dart';
 
 class SponsorService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   Future<String> addSponsor(String eventId, Sponsor sponsor) async {
     final ref = await _firestore
         .collection('events')
