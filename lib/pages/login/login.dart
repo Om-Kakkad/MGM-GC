@@ -162,7 +162,8 @@ class Login extends StatelessWidget {
             if (userModel.role == 'admin') {
               Navigator.pushReplacementNamed(context, '/admin');
             } else if (userModel.role == 'league_player') {
-              Navigator.pushReplacementNamed(context, '/league');
+              // League players now land on the standard home page
+              Navigator.pushReplacementNamed(context, '/home');
             } else {
               // Regular user
               Navigator.pushReplacementNamed(context, '/home');
