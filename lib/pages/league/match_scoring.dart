@@ -1005,8 +1005,10 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
                             await _matchService.setMatchOver(
                               eventId,
                               matchId,
-                              regularPoints: pts['a']!,
-                              bonusPoints: pts['aBonus']!,
+                              teamARegularPoints: pts['a']!,
+                              teamABonusPoints: pts['aBonus']!,
+                              teamBRegularPoints: pts['b']!,
+                              teamBBonusPoints: pts['bBonus']!,
                             );
                             await _loadData();
 

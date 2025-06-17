@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/match_model.dart';
+import 'aggregate_score_service.dart';
 
 class MatchService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AggregateScoreService _aggregateScoreService = AggregateScoreService();
 
   // Get League events for dropdown
   Future<List<Map<String, dynamic>>> getLeagueEvents() async {
@@ -245,19 +247,41 @@ class MatchService {
   Future<void> setMatchOver(
     String eventId,
     String matchId, {
-    required num regularPoints,
-    required num bonusPoints,
+    required num teamARegularPoints,
+    required num teamABonusPoints,
+    required num teamBRegularPoints,
+    required num teamBBonusPoints,
   }) async {
-    await _firestore
+    final matchRef = _firestore
         .collection('events')
         .doc(eventId)
         .collection('matches')
-        .doc(matchId)
-        .update({
-          'matchOver': true,
-          'regularPoints': regularPoints,
-          'bonusPoints': bonusPoints,
-        });
+        .doc(matchId);
+
+    await matchRef.update({
+      'matchOver': true,
+      'teamARegularPoints': teamARegularPoints,
+      'teamABonusPoints': teamABonusPoints,
+      'teamBRegularPoints': teamBRegularPoints,
+      'teamBBonusPoints': teamBBonusPoints,
+    });
+
+    final matchDoc = await matchRef.get();
+    final teams = List<String>.from(matchDoc['teams'] ?? []);
+    if (teams.length >= 2) {
+      await _aggregateScoreService.addMatchPoints(
+        eventId,
+        teams[0],
+        teamARegularPoints,
+        teamABonusPoints,
+      );
+      await _aggregateScoreService.addMatchPoints(
+        eventId,
+        teams[1],
+        teamBRegularPoints,
+        teamBBonusPoints,
+      );
+    }
   }
 
   Future<void> updateStrokeMap(
