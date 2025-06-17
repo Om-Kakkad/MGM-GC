@@ -87,6 +87,12 @@ service cloud.firestore {
         allow create: if isLeaguePlayer() || isAdmin();
         allow update, delete: if isAdmin();
       }
+
+      // Aggregate scores subcollection rules
+      match /aggregateScores/{teamId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
     }
     
     // Allow cascade batch deletions by admins

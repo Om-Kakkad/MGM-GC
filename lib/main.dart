@@ -28,6 +28,7 @@ import 'package:mgm_gc/pages/live/live_scores_list.dart';
 import 'package:mgm_gc/pages/live/live_score_detail.dart';
 import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 import 'package:mgm_gc/pages/sponsor/sponsors_page.dart';
+import 'package:mgm_gc/pages/league/aggregate_scores.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,7 @@ class MyApp extends StatelessWidget {
         '/live-scores': (context) => const LiveScoresListPage(),
         '/live-score-detail': (context) => const LiveScoreDetailPage(),
         '/sponsors': (context) => const SponsorsPage(),
+        '/aggregate-scores': (context) => const AggregateScoresPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/match_scoring') {
