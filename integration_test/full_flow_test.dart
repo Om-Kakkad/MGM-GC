@@ -269,8 +269,10 @@ void main() {
     await matchService.setMatchOver(
       eventId,
       matchId,
-      regularPoints: 4,
-      bonusPoints: 0,
+      teamARegularPoints: 4,
+      teamABonusPoints: 0,
+      teamBRegularPoints: 2,
+      teamBBonusPoints: 0,
     );
 
     final updatedMatch =
@@ -281,6 +283,6 @@ void main() {
             .doc(matchId)
             .get();
     expect(updatedMatch['matchOver'], true);
-    expect(updatedMatch['regularPoints'], 4);
+    expect(updatedMatch['teamARegularPoints'], 4);
   });
 }
