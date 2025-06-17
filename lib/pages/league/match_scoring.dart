@@ -331,26 +331,26 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   }
 
   Map<String, num> _calculatePoints() {
-    num aPoints = 0;
-    num bPoints = 0;
+    int aHolesWon = 0;
+    int bHolesWon = 0;
     int diff = 0;
     int endHole = 18;
 
+    // Count holes won by each team
     for (var i = 1; i <= 18; i++) {
       final res = _results[i];
       if (res != null) {
         switch (res.result) {
           case 'A':
-            aPoints += 2;
+            aHolesWon++;
             diff++;
             break;
           case 'B':
-            bPoints += 2;
+            bHolesWon++;
             diff--;
             break;
           case 'AS':
-            aPoints += 1;
-            bPoints += 1;
+            // Tie - no change to diff
             break;
         }
       }
@@ -363,6 +363,26 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
       }
     }
 
+    // Determine the match winner and award points
+    num aPoints = 0;
+    num bPoints = 0;
+
+    // Award points based on match result
+    if (aHolesWon > bHolesWon) {
+      // Team A wins
+      aPoints = 2;
+      bPoints = 0;
+    } else if (bHolesWon > aHolesWon) {
+      // Team B wins
+      aPoints = 0;
+      bPoints = 2;
+    } else {
+      // Match is tied
+      aPoints = 1;
+      bPoints = 1;
+    }
+
+    // Calculate bonus points
     num aBonus = 0;
     num bBonus = 0;
     if (_bonus && endHole < 18) {

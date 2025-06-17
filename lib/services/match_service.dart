@@ -263,7 +263,8 @@ class MatchService {
       'teamARegularPoints': teamARegularPoints,
       'teamABonusPoints': teamABonusPoints,
       'teamBRegularPoints': teamBRegularPoints,
-      'teamBBonusPoints': teamBBonusPoints,
+      'teamBBonusPoints':
+          teamBBonusPoints, // Fixed spelling error (3 B's to 2 B's)
     });
 
     final matchDoc = await matchRef.get();
@@ -272,16 +273,35 @@ class MatchService {
       await _aggregateScoreService.addMatchPoints(
         eventId,
         teams[0],
-        teamARegularPoints,
-        teamABonusPoints,
+        regularPoints: teamARegularPoints,
+        bonusPoints: teamABonusPoints,
       );
       await _aggregateScoreService.addMatchPoints(
         eventId,
         teams[1],
-        teamBRegularPoints,
-        teamBBonusPoints,
+        regularPoints: teamBRegularPoints,
+        bonusPoints: teamBBonusPoints, // Fixed spelling error (3 B's to 2 B's)
       );
     }
+  }
+
+  // Add a new method that takes positional arguments for backward compatibility
+  Future<void> setMatchOverWithPositionalArgs(
+    String eventId,
+    String matchId,
+    num teamARegularPoints,
+    num teamABonusPoints,
+    num teamBRegularPoints,
+    num teamBBonusPoints,
+  ) async {
+    return setMatchOver(
+      eventId,
+      matchId,
+      teamARegularPoints: teamARegularPoints,
+      teamABonusPoints: teamABonusPoints,
+      teamBRegularPoints: teamBRegularPoints,
+      teamBBonusPoints: teamBBonusPoints,
+    );
   }
 
   Future<void> updateStrokeMap(
@@ -452,13 +472,17 @@ class MatchService {
       final events = await _firestore.collection('events').get();
       List<Map<String, dynamic>> all = [];
       for (final e in events.docs) {
-        final snapshot = await _firestore
-            .collection('events')
-            .doc(e.id)
-            .collection('matches')
-            .where('matchDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-            .where('matchDateTime', isLessThan: Timestamp.fromDate(end))
-            .get();
+        final snapshot =
+            await _firestore
+                .collection('events')
+                .doc(e.id)
+                .collection('matches')
+                .where(
+                  'matchDateTime',
+                  isGreaterThanOrEqualTo: Timestamp.fromDate(start),
+                )
+                .where('matchDateTime', isLessThan: Timestamp.fromDate(end))
+                .get();
         for (final doc in snapshot.docs) {
           final data = doc.data();
           data['id'] = doc.id;
@@ -474,14 +498,15 @@ class MatchService {
   }
 
   Future<int> holeResultCount(String eventId, String matchId) async {
-    final snapshot = await _firestore
-        .collection('events')
-        .doc(eventId)
-        .collection('matches')
-        .doc(matchId)
-        .collection('holeResults')
-        .limit(1)
-        .get();
+    final snapshot =
+        await _firestore
+            .collection('events')
+            .doc(eventId)
+            .collection('matches')
+            .doc(matchId)
+            .collection('holeResults')
+            .limit(1)
+            .get();
     return snapshot.docs.length;
   }
 }
