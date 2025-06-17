@@ -235,8 +235,8 @@ void main() {
             .get();
     expect(matchesSnapshot.docs.length, 3);
 
-    final firstMatch = matchesSnapshot.docs.first;
-    final matchId = firstMatch.id;
+    final matchIds = matchesSnapshot.docs.map((d) => d.id).toList();
+    final matchId = matchIds[0];
 
     await matchService.updateHoleResult(eventId, matchId, 1, {'result': 'A'});
     await matchService.updateHoleResult(eventId, matchId, 2, {'result': 'A'});
@@ -283,6 +283,42 @@ void main() {
             .doc(matchId)
             .get();
     expect(updatedMatch['matchOver'], true);
-    expect(updatedMatch['teamARegularPoints'], 4);
+    expect(updatedMatch['regularPoints'], 4);
+
+    // finalize remaining matches to trigger aggregate score updates
+    await matchService.setMatchOver(
+      eventId,
+      matchIds[1],
+      regularPoints: 3,
+      bonusPoints: 1,
+    );
+    await matchService.setMatchOver(
+      eventId,
+      matchIds[2],
+      regularPoints: 2,
+      bonusPoints: 0,
+    );
+
+    // verify aggregate scores collection
+    final aggSnapshot = await store
+        .collection('events')
+        .doc(eventId)
+        .collection('aggregateScores')
+        .get();
+    expect(aggSnapshot.docs.length, teams.length);
+
+    Map<String, Map<String, dynamic>> scores = {
+      for (final doc in aggSnapshot.docs)
+        doc.id: doc.data() as Map<String, dynamic>
+    };
+
+    expect(scores[teams[0].teamID]!['regularPoints'], 6);
+    expect(scores[teams[0].teamID]!['bonusPoints'], 0);
+    expect(scores[teams[1].teamID]!['regularPoints'], 0);
+    expect(scores[teams[1].teamID]!['bonusPoints'], 0);
+    expect(scores[teams[2].teamID]!['regularPoints'], 3);
+    expect(scores[teams[2].teamID]!['bonusPoints'], 1);
+    expect(scores[teams[3].teamID]!['regularPoints'], 0);
+    expect(scores[teams[3].teamID]!['bonusPoints'], 0);
   });
 }
