@@ -52,7 +52,7 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
     return Scaffold(
       appBar: AppBar(title: const Text('League Features')),
       body: DefaultTabController(
-        length: 6, // Change from 5 to 6 tabs (adding Sponsors)
+        length: 7, // Add Aggregate Scores tab
         child: Column(
           children: [
             TabBar(
@@ -64,7 +64,8 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                 Tab(icon: Icon(Icons.people), text: 'My Team'),
                 Tab(icon: Icon(Icons.sports_golf), text: 'Scoring'),
                 Tab(icon: Icon(Icons.scoreboard), text: 'Live Scores'),
-                Tab(icon: Icon(Icons.business), text: 'Sponsors'), // New tab
+                Tab(icon: Icon(Icons.business), text: 'Sponsors'),
+                Tab(icon: Icon(Icons.stacked_bar_chart), text: 'Aggregate'),
               ],
             ),
             Expanded(
@@ -75,7 +76,8 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
                   _buildTeamTab(),
                   _buildScoringTab(),
                   _buildLiveScoresTab(),
-                  _buildSponsorsTab(), // New tab view
+                  _buildSponsorsTab(),
+                  _buildAggregateTab(),
                 ],
               ),
             ),
@@ -485,6 +487,42 @@ class _LeagueFeaturesState extends State<LeagueFeatures> {
             ),
             onPressed: () {
               Navigator.pushNamed(context, '/sponsors');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAggregateTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.stacked_bar_chart, size: 64, color: Colors.blue),
+          const SizedBox(height: 16),
+          const Text(
+            'Team Aggregate Scores',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'See total points for each team',
+            style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.visibility),
+            label: const Text('View Aggregate Scores'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff0D6EFD),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/aggregate-scores');
             },
           ),
         ],
