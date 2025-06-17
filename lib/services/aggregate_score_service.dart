@@ -49,6 +49,7 @@ class AggregateScoreService {
           .collection('events')
           .doc(eventId)
           .collection('aggregateScores')
+          .orderBy('total', descending: true)
           .get();
 
       return snapshot.docs
