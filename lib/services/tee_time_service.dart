@@ -26,27 +26,59 @@ class TeeTimeService {
     });
   }
 
-  Future<void> bookSlot(String slotId, String userId) async {
-    final docRef = _firestore.collection('teeTimeSlots').doc(slotId);
+  Future<void> bookSlot({
+    required String dateId,
+    required String slotId,
+    required String userId,
+  }) async {
+    final slotRef = _firestore
+        .collection('teeTimes')
+        .doc(dateId)
+        .collection('slots')
+        .doc(slotId);
+
+    final bookingRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('bookings')
+        .doc(slotId);
+
     await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(docRef);
-      if (!snapshot.exists) {
-        throw Exception('Slot not found');
+      final slotSnap = await transaction.get(slotRef);
+
+      if (slotSnap.exists) {
+        final data = slotSnap.data() as Map<String, dynamic>;
+        final status = data['status'];
+        final bookedByUid = data['bookedByUid'];
+
+        if (status != 'open' && !(status == 'held' && bookedByUid == userId)) {
+          throw Exception('Slot already booked');
+        }
       }
-      final data = snapshot.data() as Map<String, dynamic>;
-      final status = data['status'] ?? 'available';
-      final heldBy = data['heldBy'];
-      if (status == 'booked' || status == 'blocked') {
-        throw Exception('Slot not available');
+
+      final bookingSnap = await transaction.get(bookingRef);
+      if (bookingSnap.exists) {
+        throw Exception('Already booked');
       }
-      if (status == 'held' && heldBy != userId) {
-        throw Exception('Slot held by another user');
-      }
-      transaction.update(docRef, {
-        'status': 'booked',
-        'bookedBy': userId,
-        'heldBy': FieldValue.delete(),
-      });
+
+      transaction.set(
+        slotRef,
+        {
+          'status': 'booked',
+          'bookedByUid': userId,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+
+      transaction.set(
+        bookingRef,
+        {
+          'slotId': slotId,
+          'dateId': dateId,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+      );
     });
   }
 

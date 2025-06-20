@@ -30,6 +30,11 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isAdmin();
       // Allow admins to delete users
       allow delete: if isAdmin();
+
+      // User bookings subcollection rules
+      match /bookings/{bookingId} {
+        allow read, write: if isAdmin() || isOwner(userId);
+      }
     }
     
     // Events collection rules
@@ -93,6 +98,25 @@ service cloud.firestore {
         allow read: if isAuthenticated();
         allow write: if isAdmin();
       }
+    }
+
+    // Tee times booking rules
+    match /teeTimes/{dateId}/{slotId} {
+      allow read: if isAuthenticated();
+
+      function bookingAllowed() {
+        return isAuthenticated() &&
+               request.auth.uid == request.resource.data.bookedByUid &&
+               request.resource.data.status in ['held', 'booked'] &&
+               (
+                 resource == null ||
+                 resource.data.status == 'open' ||
+                 (resource.data.status == 'held' &&
+                  resource.data.bookedByUid == request.auth.uid)
+               );
+      }
+
+      allow create, update: if isAdmin() || bookingAllowed();
     }
     
     // Allow cascade batch deletions by admins
