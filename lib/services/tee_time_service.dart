@@ -13,10 +13,8 @@ class TeeTimeService {
         .where('time', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
         .where('time', isLessThan: Timestamp.fromDate(end))
         .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => TeeTimeSlot.fromFirestore(doc)).toList(),
-        );
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => TeeTimeSlot.fromFirestore(doc)).toList());
   }
 
   Future<void> holdSlot(String slotId, String userId) async {
