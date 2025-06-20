@@ -156,6 +156,18 @@ class _AdminPanelState extends State<AdminPanel>
                       },
                     ),
 
+                    const SizedBox(height: 16),
+
+                    // Slots Management Card
+                    _buildAdminCard(
+                      title: 'Slots',
+                      description: 'Manage tee time slots',
+                      icon: Icons.schedule,
+                      onTap: () {
+                        Navigator.pushNamed(context, '/slots-management');
+                      },
+                    ),
+
                     // ...other admin features...
                   ],
                 ),

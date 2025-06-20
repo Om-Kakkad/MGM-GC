@@ -3,23 +3,25 @@
   "description": "Cloud Functions for Firebase",
   "scripts": {
     "lint": "echo 'Skipping lint check'",
-    "serve": "firebase emulators:start --only functions",
+    "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
+    "build": "tsc",
+    "deploy": "npm run build && firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "engines": {
     "node": "18"
   },
-  "main": "index.js",
+  "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.2"
   },
   "devDependencies": {
     "eslint": "^8.15.0",
-    "eslint-config-google": "^0.14.0"
+    "eslint-config-google": "^0.14.0",
+    "typescript": "^5.2.2"
   },
   "private": true
 }
