@@ -94,6 +94,14 @@ class _HomePageState extends State<HomePage> {
                 Navigator.pushNamed(context, '/events');
               },
             ),
+            ListTile(
+              title: const Text('Tee Times'),
+              leading: const Icon(Icons.schedule),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/tee-times');
+              },
+            ),
             // Sponsors menu item - available for all users
             ListTile(
               title: const Text('Sponsors'),

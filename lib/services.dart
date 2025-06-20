@@ -1,0 +1,10 @@
+export 'services/aggregate_score_service.dart';
+export 'services/auth_service.dart';
+export 'services/delete_service.dart';
+export 'services/deletion_service.dart';
+export 'services/event_service.dart';
+export 'services/match_service.dart';
+export 'services/sponsor_service.dart';
+export 'services/team_service.dart';
+export 'services/test_service.dart';
+export 'services/tee_time_service.dart';
