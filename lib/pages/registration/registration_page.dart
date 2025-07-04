@@ -178,10 +178,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
         if (teamDoc.exists) {
           // Check for both possible field names (teamName and name)
           Map<String, dynamic>? data = teamDoc.data();
-          if (data != null) {
-            // First try teamName, then fall back to name
-            return data['teamName'] ?? data['name'] as String?;
-          }
+          // First try teamName, then fall back to name
+          return data?['teamName'] ?? data?['name'] as String?;
           break; // Found the team, no need to continue checking
         }
       }

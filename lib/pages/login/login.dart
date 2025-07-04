@@ -152,23 +152,65 @@ class Login extends StatelessWidget {
       onPressed: () async {
         if (_emailController.text.isNotEmpty &&
             _passwordController.text.isNotEmpty) {
-          UserModel? userModel = await _authService.signInWithEmailAndPassword(
-            _emailController.text,
-            _passwordController.text,
-          );
+          try {
+            // Show loading indicator
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return const Center(child: CircularProgressIndicator());
+              },
+            );
 
-          if (userModel != null) {
-            // Navigate based on user role
-            if (userModel.role == 'admin') {
-              Navigator.pushReplacementNamed(context, '/admin');
-            } else if (userModel.role == 'league_player') {
-              // League players now land on the standard home page
-              Navigator.pushReplacementNamed(context, '/home');
+            UserModel? userModel = await _authService
+                .signInWithEmailAndPassword(
+                  _emailController.text,
+                  _passwordController.text,
+                );
+
+            // Close loading dialog
+            Navigator.of(context).pop();
+
+            // Check if login was successful
+            if (userModel != null) {
+              // Navigate based on user role
+              if (userModel.role == 'admin') {
+                Navigator.pushReplacementNamed(context, '/admin');
+              } else {
+                // Both league players and regular users go to home
+                Navigator.pushReplacementNamed(context, '/home');
+              }
             } else {
-              // Regular user
-              Navigator.pushReplacementNamed(context, '/home');
+              // Show error if login failed but no exception was thrown
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Login failed. Please check your credentials.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
+          } catch (e) {
+            // Close loading dialog if open
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            }
+
+            // Show specific error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Login error: ${e.toString()}'),
+                backgroundColor: Colors.red,
+              ),
+            );
           }
+        } else {
+          // Show error for empty fields
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter both email and password'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       },
       child: const Text("Sign In"),

@@ -28,30 +28,17 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks! :linkage => :static
+  use_frameworks!
   use_modular_headers!
 
-  # Update Firebase components to version 11.13.0 to match plugin requirements
-  pod 'Firebase', '11.13.0'
-  pod 'FirebaseCore', '11.13.0'
-  pod 'FirebaseCoreInternal', '11.13.0'
-  pod 'FirebaseAppCheckInterop', '11.13.0'
-  pod 'FirebaseAuthInterop', '11.13.0'
-  pod 'FirebaseFirestore', 
-    :git => 'https://github.com/invertase/firestore-ios-sdk-frameworks.git',
-    :tag => '11.13.0'
-
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
-  target 'RunnerTests' do
-    inherit! :search_paths
-  end
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Ensure minimum deployment target is correctly set
+    # Add the following to avoid deployment target warnings
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
     end
