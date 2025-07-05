@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
+import 'package:mgm_gc/pages/tee_times/my_bookings_page.dart';
+import 'package:mgm_gc/pages/tee_times/tee_times_page.dart' as tee_times;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -67,12 +69,12 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text(
                     'Welcome',
-                    style: TextStyle(color: Colors.white, fontSize: 24),
+                    style: const TextStyle(color: Colors.white, fontSize: 24),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     _currentUser?.email ?? '',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ],
               ),
@@ -83,6 +85,34 @@ class _HomePageState extends State<HomePage> {
               leading: const Icon(Icons.home),
               onTap: () {
                 Navigator.pop(context);
+              },
+            ),
+            // Book Tee Time menu item - add this new item
+            ListTile(
+              title: const Text('Book Tee Time'),
+              leading: const Icon(Icons.timer),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const tee_times.TeeTimesPage(),
+                  ),
+                );
+              },
+            ),
+            // My Bookings menu item - available for all users
+            ListTile(
+              title: const Text('My Bookings'),
+              leading: const Icon(Icons.calendar_today),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyBookingsPage(),
+                  ),
+                );
               },
             ),
             // Events menu item - available for all users
@@ -105,7 +135,7 @@ class _HomePageState extends State<HomePage> {
             ),
             // League Features for regular users
             if (_currentUser?.role != 'league_player' &&
-                _currentUser?.role != 'admin') ...[
+                _currentUser?.role != 'admin')
               ListTile(
                 title: const Text('League Features'),
                 leading: const Icon(Icons.sports_golf),
@@ -114,20 +144,8 @@ class _HomePageState extends State<HomePage> {
                   Navigator.pushNamed(context, '/user-league');
                 },
               ),
-            ],
-            // Admin-specific menu items
-            if (_currentUser?.role == 'admin') ...[
-              ListTile(
-                title: const Text('Admin Panel'),
-                leading: const Icon(Icons.admin_panel_settings),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, '/admin');
-                },
-              ),
-            ],
             // League player-specific menu items
-            if (_currentUser?.role == 'league_player') ...[
+            if (_currentUser?.role == 'league_player')
               ListTile(
                 title: const Text('League Features'),
                 leading: const Icon(Icons.sports),
@@ -136,13 +154,21 @@ class _HomePageState extends State<HomePage> {
                   Navigator.pushNamed(context, '/league');
                 },
               ),
-            ],
+            // Admin-specific menu items
+            if (_currentUser?.role == 'admin')
+              ListTile(
+                title: const Text('Admin Panel'),
+                leading: const Icon(Icons.admin_panel_settings),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/admin');
+                },
+              ),
           ],
         ),
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Center(
             child: Column(
@@ -155,6 +181,31 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 30),
+          // Add tee time booking button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const tee_times.TeeTimesPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.golf_course),
+              label: const Text('Book a Tee Time'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff0D6EFD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Existing events button
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ElevatedButton.icon(

@@ -1,0 +1,128 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:mgm_gc/models/booking_model.dart';
+import 'package:mgm_gc/services/tee_time_service.dart';
+
+class MyBookingsPage extends StatefulWidget {
+  const MyBookingsPage({super.key});
+
+  @override
+  _MyBookingsPageState createState() => _MyBookingsPageState();
+}
+
+class _MyBookingsPageState extends State<MyBookingsPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Bookings'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [Tab(text: 'Upcoming'), Tab(text: 'Past')],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [_BookingsList(isPast: false), _BookingsList(isPast: true)],
+      ),
+    );
+  }
+}
+
+class _BookingsList extends StatelessWidget {
+  final bool isPast;
+
+  const _BookingsList({super.key, required this.isPast});
+
+  @override
+  Widget build(BuildContext context) {
+    final teeTimeService = Provider.of<TeeTimeService>(context);
+
+    return StreamBuilder<List<BookingModel>>(
+      stream: teeTimeService.getUserBookings(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        final bookings = snapshot.data ?? [];
+
+        // Filter bookings based on upcoming or past
+        final filteredBookings =
+            bookings
+                .where(
+                  (booking) =>
+                      isPast ? !booking.isUpcoming : booking.isUpcoming,
+                )
+                .toList();
+
+        if (filteredBookings.isEmpty) {
+          return Center(
+            child: Text(isPast ? 'No past bookings' : 'No upcoming bookings'),
+          );
+        }
+
+        // Sort by date (upcoming: soonest first, past: most recent first)
+        filteredBookings.sort(
+          (a, b) =>
+              isPast
+                  ? b.startTime.compareTo(a.startTime)
+                  : a.startTime.compareTo(b.startTime),
+        );
+
+        return ListView.builder(
+          itemCount: filteredBookings.length,
+          itemBuilder: (context, index) {
+            final booking = filteredBookings[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                title: Text(
+                  DateFormat('EEEE, MMMM d, yyyy').format(booking.startTime),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Time: ${DateFormat('HH:mm').format(booking.startTime)} - ${DateFormat('HH:mm').format(booking.endTime)}',
+                    ),
+                    if (booking.players.isNotEmpty)
+                      Text('Players: ${booking.players.join(", ")}'),
+                  ],
+                ),
+                trailing:
+                    isPast
+                        ? null
+                        : const Icon(
+                          Icons.event_available,
+                          color: Colors.green,
+                        ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

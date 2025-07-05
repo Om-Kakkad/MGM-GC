@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+// Added import for SlotsManagementPage
+import 'package:mgm_gc/pages/admin/slots_management_page.dart';
 // Added import for CollectionUtils
 import '../../utils/collection_utils.dart';
 // Added prefix to resolve ambiguity
@@ -141,6 +143,23 @@ class _AdminPanelState extends State<AdminPanel>
                       icon: Icons.inbox,
                       onTap: () {
                         Navigator.pushNamed(context, '/team-requests');
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Slots Management Card
+                    _buildAdminCard(
+                      title: 'Slots Management',
+                      description: 'Manage tee time slots - block, unblock, and create slots',
+                      icon: Icons.access_time_filled,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SlotsManagementPage(),
+                          ),
+                        );
                       },
                     ),
 
@@ -1104,19 +1123,17 @@ class TeamCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             FutureBuilder<Map<String, dynamic>?>(
-              future:
-                  team.eventID.isNotEmpty
-                      ? FirebaseFirestore.instance
-                          .collection('events')
-                          .doc(team.eventID)
-                          .get()
-                          .then((doc) => doc.data())
-                      : Future.value(null),
+              future: team.eventID.isNotEmpty
+                  ? FirebaseFirestore.instance
+                      .collection('events')
+                      .doc(team.eventID)
+                      .get()
+                      .then((doc) => doc.data())
+                  : Future.value(null),
               builder: (context, snapshot) {
                 String eventName = 'Unknown Event';
                 if (snapshot.hasData && snapshot.data != null) {
-                  eventName =
-                      snapshot.data!['eventName'] ??
+                  eventName = snapshot.data!['eventName'] ??
                       snapshot.data!['name'] ??
                       'Unknown Event';
                 }
@@ -1155,72 +1172,66 @@ class TeamCard extends StatelessWidget {
                         .doc(team.teamID)
                         .get()
                         .then((doc) {
-                          if (doc.exists) {
-                            Map<String, dynamic> data =
-                                doc.data() as Map<String, dynamic>;
-                            // Check both potential password field names
-                            String password =
-                                data['teamPassword'] ??
-                                data['password'] ??
-                                'Password not found';
+                      if (doc.exists) {
+                        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                        // Check both potential password field names
+                        String password = data['teamPassword'] ?? 
+                                        data['password'] ?? 
+                                        'Password not found';
 
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: const Text('Team Password'),
-                                  content: Text(password),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.of(context).pop(),
-                                      child: const Text('Close'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          } else {
-                            // Show error if team document doesn't exist
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: const Text('Error'),
-                                  content: const Text('Team not found'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.of(context).pop(),
-                                      child: const Text('Close'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          }
-                        })
-                        .catchError((error) {
-                          // Show error if there's an exception
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Error'),
-                                content: Text(
-                                  'Failed to load password: $error',
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Team Password'),
+                              content: Text(password),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('Close'),
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed:
-                                        () => Navigator.of(context).pop(),
-                                    child: const Text('Close'),
-                                  ),
-                                ],
-                              );
-                            },
+                              ],
+                            );
+                          },
+                        );
+                      } else {
+                        // Show error if team document doesn't exist
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Error'),
+                              content: const Text('Team document not found'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('Close'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    }).catchError((error) {
+                      // Show error if there's an exception
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Error'),
+                            content: Text(
+                              'Failed to load password: $error',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Close'),
+                              ),
+                            ],
                           );
-                        });
+                        },
+                      );
+                    });
                   },
                   tooltip: 'View Password',
                 ),

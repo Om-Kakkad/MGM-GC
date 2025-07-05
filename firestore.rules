@@ -1,98 +1,113 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Check if user is authenticated
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isFirstUser() {
+      return isSignedIn() && 
+        !exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    // Check if user is an admin
-    function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    
-    // Check if user is a league player
     function isLeaguePlayer() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'league_player';
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     
-    // Check if user is the owner of the document
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Users collection rules
+    // Users collection
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isOwner(userId) || isAdmin();
-      // Allow admins to delete users
+      allow read: if isSignedIn();
+      // Allow users to create their own document if it doesn't exist yet
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if isAdmin() || isOwner(userId);
       allow delete: if isAdmin();
     }
     
-    // Events collection rules
-    match /events/{eventId} {
+    // TeeTimes collection
+    match /teeTimes/{dateId} {
+      allow read: if isSignedIn();
+      
+      // Allow any authenticated user to create date documents
+      allow create, update: if isSignedIn();
+      // Only admins can delete date documents
+      allow delete: if isAdmin();
+      
+      // Slots subcollection
+      match /slots/{slotId} {
+        // Anyone signed in can read slots
+        allow read: if isSignedIn();
+        
+        // Allow any authenticated user to create slots
+        allow create: if isSignedIn();
+        
+        // Booking logic
+        allow update: if isSignedIn() && (
+          // Admins can update any slot
+          isAdmin() ||
+          
+          // Users can book slots that are open
+          (resource.data.status == 'open' && 
+           (request.resource.data.status == 'booked' ||
+           request.resource.data.status == 'held')) ||
+          
+          // Users can complete their own held bookings
+          (resource.data.status == 'held' && 
+           resource.data.bookedByUid == request.auth.uid &&
+           request.resource.data.status == 'booked')
+        );
+        
+        // Only admins can delete slots
+        allow delete: if isSignedIn();
+      }
+    }
+    
+    // Bookings collection
+    match /bookings/{bookingId} {
+      // Users can read their own bookings, admins can read all
+      allow read: if isSignedIn() && (
+        isAdmin() || resource.data.userId == request.auth.uid
+      );
+      
+      // Users can create bookings, admins can create/update
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      
+      // Only admins can delete bookings
+      allow delete: if isAdmin();
+    }
+
+    // Sponsors subcollection rules
+    match /sponsors/{sponsorId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Event registrations subcollection rules
+    match /registrations/{registrationId} {
+      allow read: if isAuthenticated();
+      allow create: if isLeaguePlayer() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // Aggregate scores subcollection rules
+    match /aggregateScores/{teamId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
-      
-      // Teams subcollection rules
-      match /teams/{teamId} {
-        allow read: if isAuthenticated();
-        allow create, delete: if isAdmin();
-        allow update: if isAdmin() || 
-                      (isAuthenticated() && 
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players']));
-      }
-      
-      // Matches subcollection rules
-      match /matches/{matchId} {
-        allow read: if isAdmin() || (
-          isLeaguePlayer() &&
-          participants().hasAny([request.auth.uid])
-        );
-        allow create: if isAdmin();
-        function matchDoc() {
-          return get(/databases/$(database)/documents/events/$(eventId)/matches/$(matchId));
-        }
-        function participants() {
-          return matchDoc().data.participantUids;
-        }
-        allow update, delete: if isAdmin() || (
-          isLeaguePlayer() &&
-          participants().hasAny([request.auth.uid]) &&
-          !matchDoc().data.matchOver
-        );
-
-        match /holeResults/{holeId} {
-          allow read: if isAuthenticated();
-          allow write: if isAdmin() || (
-            isLeaguePlayer() &&
-            participants().hasAny([request.auth.uid]) &&
-            !matchDoc().data.matchOver
-          );
-        }
-      }
-
-      // Sponsors subcollection rules
-      match /sponsors/{sponsorId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-      }
-
-      // Event registrations subcollection rules
-      match /registrations/{registrationId} {
-        allow read: if isAuthenticated();
-        allow create: if isLeaguePlayer() || isAdmin();
-        allow update, delete: if isAdmin();
-      }
-
-      // Aggregate scores subcollection rules
-      match /aggregateScores/{teamId} {
-        allow read: if isAuthenticated();
-        allow write: if isAdmin();
-      }
     }
     
     // Allow cascade batch deletions by admins

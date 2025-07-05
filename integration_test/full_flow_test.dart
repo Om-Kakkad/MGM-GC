@@ -39,8 +39,8 @@ void main() {
       'uid': adminId,
       'email': adminEmail,
       'role': 'admin',
-      'createdAt': Timestamp.now(),
-      'updatedAt': Timestamp.now(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
 
     // 2. log out
@@ -107,8 +107,8 @@ void main() {
           'firstName': 'Player',
           'lastName': '${team.teamName} ${i + 1}',
           'role': 'user', // Start as regular user
-          'createdAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
         // Create team join request
@@ -376,8 +376,7 @@ void main() {
     expect(aggSnapshot.docs.length, teams.length);
 
     Map<String, Map<String, dynamic>> scores = {
-      for (final doc in aggSnapshot.docs)
-        doc.id: doc.data(),
+      for (final doc in aggSnapshot.docs) doc.id: doc.data(),
     };
 
     // Check team scores based on team ID

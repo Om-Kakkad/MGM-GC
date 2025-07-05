@@ -29,6 +29,8 @@ import 'package:mgm_gc/pages/live/live_score_detail.dart';
 import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 import 'package:mgm_gc/pages/sponsor/sponsors_page.dart';
 import 'package:mgm_gc/pages/league/aggregate_scores.dart';
+import 'package:provider/provider.dart';
+import 'package:mgm_gc/services/tee_time_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,44 +53,47 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      initialRoute: '/splash',
-      routes: {
-        '/splash': (context) => const SponsorSplash(),
-        '/login': (context) => Login(),
-        '/signup': (context) => Signup(),
-        '/home': (context) => HomePage(),
-        '/admin': (context) => AdminPanel(),
-        '/league': (context) => LeagueFeatures(),
-        '/user-league': (context) => const UserLeagueFeatures(),
-        '/events': (context) => const EventsListPage(),
-        '/event-details': (context) => const EventDetailsPage(),
-        '/create-match': (context) => const MatchCreationForm(),
-        '/create-team': (context) => const TeamCreationForm(),
-        '/user-management': (context) => const UserManagementPage(),
-        '/team-management': (context) => const TeamManagementPage(),
-        '/event-management': (context) => const EventManagementPage(),
-        '/match-management': (context) => const MatchManagementPage(),
-        '/sponsor-management': (context) => const SponsorManagementPage(),
-        '/team-requests': (context) => const TeamRequestsPage(),
-        '/create-event': (context) => const EventCreationForm(),
-        '/join-team': (context) => const JoinTeamPage(),
-        '/live-scores': (context) => const LiveScoresListPage(),
-        '/live-score-detail': (context) => const LiveScoreDetailPage(),
-        '/sponsors': (context) => const SponsorsPage(),
-        '/aggregate-scores': (context) => const AggregateScoresPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/match_scoring') {
-          final args = settings.arguments as Map<String, String>;
-          return MaterialPageRoute(
-            builder: (context) => MatchScoringPage(),
-            settings: settings,
-          );
-        }
-        return null;
-      },
+    return MultiProvider(
+      providers: [ChangeNotifierProvider(create: (_) => TeeTimeService())],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        initialRoute: '/splash',
+        routes: {
+          '/splash': (context) => const SponsorSplash(),
+          '/login': (context) => Login(),
+          '/signup': (context) => Signup(),
+          '/home': (context) => HomePage(),
+          '/admin': (context) => AdminPanel(),
+          '/league': (context) => LeagueFeatures(),
+          '/user-league': (context) => const UserLeagueFeatures(),
+          '/events': (context) => const EventsListPage(),
+          '/event-details': (context) => const EventDetailsPage(),
+          '/create-match': (context) => const MatchCreationForm(),
+          '/create-team': (context) => const TeamCreationForm(),
+          '/user-management': (context) => const UserManagementPage(),
+          '/team-management': (context) => const TeamManagementPage(),
+          '/event-management': (context) => const EventManagementPage(),
+          '/match-management': (context) => const MatchManagementPage(),
+          '/sponsor-management': (context) => const SponsorManagementPage(),
+          '/team-requests': (context) => const TeamRequestsPage(),
+          '/create-event': (context) => const EventCreationForm(),
+          '/join-team': (context) => const JoinTeamPage(),
+          '/live-scores': (context) => const LiveScoresListPage(),
+          '/live-score-detail': (context) => const LiveScoreDetailPage(),
+          '/sponsors': (context) => const SponsorsPage(),
+          '/aggregate-scores': (context) => const AggregateScoresPage(),
+        },
+        onGenerateRoute: (settings) {
+          if (settings.name == '/match_scoring') {
+            final args = settings.arguments as Map<String, String>;
+            return MaterialPageRoute(
+              builder: (context) => MatchScoringPage(),
+              settings: settings,
+            );
+          }
+          return null;
+        },
+      ),
     );
   }
 }
