@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:mgm_gc/services/tee_time_service.dart';
+import 'package:mgm_gc/models/booking_model.dart'; // Add this import for PlayerInfo
 
 class DummyPaymentPage extends StatefulWidget {
   final String dateId;
   final String teeTimeId;
-  final DateTime startTime;
-  final List<String> players;
+  final List<PlayerInfo> players;
+  final DateTime startTime; // Add startTime property
 
   const DummyPaymentPage({
     super.key,
     required this.dateId,
     required this.teeTimeId,
-    required this.startTime,
     required this.players,
+    required this.startTime, // Add required parameter
   });
 
   @override
@@ -52,7 +53,7 @@ class _DummyPaymentPageState extends State<DummyPaymentPage> {
               style: const TextStyle(fontSize: 16),
             ),
             Text(
-              'Players: ${widget.players.join(", ")}',
+              'Players: ${widget.players.map((player) => player.name).join(", ")}',
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -133,24 +134,10 @@ class _DummyPaymentPageState extends State<DummyPaymentPage> {
   }
 
   Future<void> _processPayment(BuildContext context) async {
-    // Validate inputs
-    if (_cardNumberController.text.isEmpty ||
-        _expiryDateController.text.isEmpty ||
-        _cvvController.text.isEmpty ||
-        _nameOnCardController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all payment details'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isProcessing = true;
     });
-
+    
     // Simulate payment processing
     await Future.delayed(const Duration(seconds: 2));
 

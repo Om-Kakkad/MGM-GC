@@ -1,7 +1,5 @@
 import 'package:mgm_gc/services/auth_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:mgm_gc/pages/tee_times/tee_times_page.dart' as tee_times;
 import 'package:mgm_gc/pages/tee_times/my_bookings_page.dart' as bookings;
 

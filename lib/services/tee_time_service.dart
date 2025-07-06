@@ -98,7 +98,7 @@ class TeeTimeService extends ChangeNotifier {
   Future<bool> bookTeeTime(
     String dateId,
     String slotId,
-    List<String> players,
+    List<PlayerInfo> players,
   ) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return false;
@@ -106,6 +106,9 @@ class TeeTimeService extends ChangeNotifier {
     bool success = false;
 
     try {
+      // Get current user's name for the booker field
+      String? bookerName = await _getCurrentUserName();
+
       await _firestore.runTransaction((transaction) async {
         // Get the current slot
         DocumentReference slotRef = _firestore
@@ -127,29 +130,65 @@ class TeeTimeService extends ChangeNotifier {
           throw Exception('Slot is not available');
         }
 
+        // Get player names for the slot update
+        List<String> playerNames = players.map((p) => p.name).toList();
+
         // Update slot to booked
         transaction.update(slotRef, {
           'status': TeeTimeStatus.booked.toString().split('.').last,
           'bookedByUid': userId,
-          'players': players,
+          'players': playerNames,
         });
 
-        // Create booking record
+        // Create primary booking record
         DocumentReference bookingRef = _firestore.collection('bookings').doc();
+        final primaryBookingId = bookingRef.id;
+
         transaction.set(
           bookingRef,
           BookingModel(
-            id: bookingRef.id,
+            id: primaryBookingId,
             teeTimeId: slotId,
             dateId: dateId,
             userId: userId,
+            bookerName: bookerName,
             bookingDate: DateTime.now(),
             startTime: slot.startTime,
             endTime: slot.endTime,
             players: players,
             isPaid: true,
+            isSharedBooking: false,
+            primaryBookingId: null,
           ).toFirestore(),
         );
+
+        // Create shared bookings for registered players
+        for (final player in players) {
+          if (player.isRegistered &&
+              player.userId != null &&
+              player.userId != userId) {
+            DocumentReference sharedBookingRef =
+                _firestore.collection('bookings').doc();
+            transaction.set(
+              sharedBookingRef,
+              BookingModel(
+                id: sharedBookingRef.id,
+                teeTimeId: slotId,
+                dateId: dateId,
+                userId: player.userId!,
+                bookerName:
+                    bookerName, // Include booker name in shared bookings
+                bookingDate: DateTime.now(),
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                players: players,
+                isPaid: true,
+                isSharedBooking: true,
+                primaryBookingId: primaryBookingId,
+              ).toFirestore(),
+            );
+          }
+        }
       });
 
       success = true;
@@ -159,6 +198,32 @@ class TeeTimeService extends ChangeNotifier {
     }
 
     return success;
+  }
+
+  // Helper method to get current user's name
+  Future<String?> _getCurrentUserName() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) return null;
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return null;
+
+      final userData = userDoc.data();
+      if (userData == null) return null;
+
+      String firstName = userData['firstName'] ?? '';
+      String lastName = userData['lastName'] ?? '';
+
+      if (firstName.isEmpty && lastName.isEmpty) {
+        return userData['email'] ?? 'Unknown User';
+      }
+
+      return '$firstName $lastName'.trim();
+    } catch (e) {
+      print('Error getting user name: $e');
+      return null;
+    }
   }
 
   // Hold a slot temporarily (for guests during payment)
@@ -324,10 +389,10 @@ class TeeTimeService extends ChangeNotifier {
 
       // Commit the batch
       await batch.commit();
-      print('Successfully generated ${numberOfSlots} slots for $dateId');
+      print('Successfully generated $numberOfSlots slots for $dateId');
     } catch (e) {
       print('Error generating slots: $e');
-      throw e; // Re-throw to allow caller to handle
+      rethrow; // Re-throw to allow caller to handle
     }
   }
 
@@ -377,6 +442,76 @@ class TeeTimeService extends ChangeNotifier {
     } catch (e) {
       print('Error deleting slots for date: $e');
       return false;
+    }
+  }
+
+  // Search for users by email or name
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    if (query.isEmpty || query.length < 3) {
+      return [];
+    }
+
+    try {
+      // Search by email
+      final emailResults =
+          await _firestore
+              .collection('users')
+              .where('email', isGreaterThanOrEqualTo: query)
+              .where('email', isLessThanOrEqualTo: query + '\uf8ff')
+              .limit(5)
+              .get();
+
+      // Search by first name
+      final firstNameResults =
+          await _firestore
+              .collection('users')
+              .where('firstName', isGreaterThanOrEqualTo: query)
+              .where('firstName', isLessThanOrEqualTo: query + '\uf8ff')
+              .limit(5)
+              .get();
+
+      // Search by last name
+      final lastNameResults =
+          await _firestore
+              .collection('users')
+              .where('lastName', isGreaterThanOrEqualTo: query)
+              .where('lastName', isLessThanOrEqualTo: query + '\uf8ff')
+              .limit(5)
+              .get();
+
+      // Combine results, removing duplicates
+      Set<String> addedIds = {};
+      List<Map<String, dynamic>> results = [];
+
+      void addResults(QuerySnapshot snapshot) {
+        for (var doc in snapshot.docs) {
+          if (!addedIds.contains(doc.id)) {
+            addedIds.add(doc.id);
+
+            final data = doc.data() as Map<String, dynamic>;
+            String displayName =
+                '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+            if (displayName.isEmpty) {
+              displayName = data['email'] ?? 'Unknown User';
+            }
+
+            results.add({
+              'id': doc.id,
+              'name': displayName,
+              'email': data['email'] ?? '',
+            });
+          }
+        }
+      }
+
+      addResults(emailResults);
+      addResults(firstNameResults);
+      addResults(lastNameResults);
+
+      return results;
+    } catch (e) {
+      print('Error searching users: $e');
+      return [];
     }
   }
 }
