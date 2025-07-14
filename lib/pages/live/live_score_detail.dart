@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/match_service.dart';
 
-const List<int> pars = [4, 4, 3, 4, 5, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5];
+const List<int> pars = [3, 3, 4, 4, 5, 3, 5, 4, 3, 4, 5, 3, 5, 3, 4, 3, 4, 4];
 const List<int> strokeIndex = [
   18,
   8,

@@ -1,6 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // During development, allow all operations for testing
+    // IMPORTANT: REMOVE THIS RULE FOR PRODUCTION
+    match /{document=**} {
+      allow read, write: if true;
+    }
+    
+    // The rules below will only be applied if the above rule is removed
     // Helper functions
     function isSignedIn() {
       return request.auth != null;
@@ -95,6 +102,20 @@ service cloud.firestore {
     // Sponsors subcollection rules
     match /sponsors/{sponsorId} {
       allow read, write: if isSignedIn();
+    }
+    
+    // Scorecard collection
+    match /scorecards/{scorecardId} {
+      // Anyone signed in can read and write scorecards
+      allow read, write: if isSignedIn();
+    }
+    
+    // Handicap records collection
+    match /handicapRecords/{recordId} {
+      // Anyone signed in can read handicap records
+      allow read: if isSignedIn();
+      // Only the user and admins can write to handicap records
+      allow write: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
 
     // Event registrations subcollection rules

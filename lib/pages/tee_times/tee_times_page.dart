@@ -280,12 +280,12 @@ class TeeTimeCard extends StatelessWidget {
     List<PlayerInfo> selectedPlayers = [];
 
     // For search UI
-    final TextEditingController _searchController = TextEditingController();
+    final TextEditingController searchController = TextEditingController();
     List<Map<String, dynamic>> searchResults = [];
     bool isSearching = false;
 
     // For manual entry
-    final TextEditingController _manualNameController = TextEditingController();
+    final TextEditingController manualNameController = TextEditingController();
 
     return showDialog(
       context: context,
@@ -338,7 +338,7 @@ class TeeTimeCard extends StatelessWidget {
               )) {
                 setState(() {
                   selectedPlayers.add(newPlayer);
-                  _searchController.clear();
+                  searchController.clear();
                   searchResults = [];
                 });
               }
@@ -346,13 +346,13 @@ class TeeTimeCard extends StatelessWidget {
 
             // Function to add a manually entered player
             void addManualPlayer() {
-              final name = _manualNameController.text.trim();
+              final name = manualNameController.text.trim();
               if (name.isNotEmpty) {
                 setState(() {
                   selectedPlayers.add(
                     PlayerInfo(name: name, isRegistered: false),
                   );
-                  _manualNameController.clear();
+                  manualNameController.clear();
                 });
               }
             }
@@ -403,7 +403,7 @@ class TeeTimeCard extends StatelessWidget {
                             children: [
                               // Search for registered users
                               TextField(
-                                controller: _searchController,
+                                controller: searchController,
                                 decoration: InputDecoration(
                                   labelText: 'Search for users',
                                   hintText: 'Enter email or name',
@@ -469,7 +469,7 @@ class TeeTimeCard extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: TextField(
-                                      controller: _manualNameController,
+                                      controller: manualNameController,
                                       decoration: const InputDecoration(
                                         labelText: 'Add player by name',
                                         hintText: 'Enter player name',
@@ -500,7 +500,7 @@ class TeeTimeCard extends StatelessWidget {
                                   child: Text('No players selected'),
                                 )
                               else
-                                Container(
+                                SizedBox(
                                   height: 150, // Fixed height here too
                                   child: ListView.builder(
                                     // Remove shrinkWrap which was causing the issue

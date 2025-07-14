@@ -457,7 +457,7 @@ class TeeTimeService extends ChangeNotifier {
           await _firestore
               .collection('users')
               .where('email', isGreaterThanOrEqualTo: query)
-              .where('email', isLessThanOrEqualTo: query + '\uf8ff')
+              .where('email', isLessThanOrEqualTo: '$query\uf8ff')
               .limit(5)
               .get();
 
@@ -466,7 +466,7 @@ class TeeTimeService extends ChangeNotifier {
           await _firestore
               .collection('users')
               .where('firstName', isGreaterThanOrEqualTo: query)
-              .where('firstName', isLessThanOrEqualTo: query + '\uf8ff')
+              .where('firstName', isLessThanOrEqualTo: '$query\uf8ff')
               .limit(5)
               .get();
 
@@ -475,7 +475,7 @@ class TeeTimeService extends ChangeNotifier {
           await _firestore
               .collection('users')
               .where('lastName', isGreaterThanOrEqualTo: query)
-              .where('lastName', isLessThanOrEqualTo: query + '\uf8ff')
+              .where('lastName', isLessThanOrEqualTo: '$query\uf8ff')
               .limit(5)
               .get();
 
