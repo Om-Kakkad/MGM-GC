@@ -29,8 +29,10 @@ import 'package:mgm_gc/pages/live/live_score_detail.dart';
 import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 import 'package:mgm_gc/pages/sponsor/sponsors_page.dart';
 import 'package:mgm_gc/pages/league/aggregate_scores.dart';
+import 'package:mgm_gc/pages/tee_times/scorecard_page.dart';
 import 'package:provider/provider.dart';
 import 'package:mgm_gc/services/tee_time_service.dart';
+import 'package:mgm_gc/services/scorecard_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,11 +40,21 @@ Future<void> main() async {
 
   if (kDebugMode) {
     // Connect to Firebase emulators
-    FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
-    FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
-    FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
+    try {
+      FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+      FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+      FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
 
-    print('Connected to Firebase emulators: Auth, Firestore, and Functions');
+      // Set Firestore settings to allow persistence and better emulator support
+      FirebaseFirestore.instance.settings = Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+
+      print('Connected to Firebase emulators: Auth, Firestore, and Functions');
+    } catch (e) {
+      print('Error connecting to Firebase emulators: $e');
+    }
   }
 
   runApp(const MyApp());
@@ -54,7 +66,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => TeeTimeService())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => TeeTimeService()),
+        ChangeNotifierProvider(create: (_) => ScorecardService()),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         initialRoute: '/splash',
@@ -82,6 +97,7 @@ class MyApp extends StatelessWidget {
           '/live-score-detail': (context) => const LiveScoreDetailPage(),
           '/sponsors': (context) => const SponsorsPage(),
           '/aggregate-scores': (context) => const AggregateScoresPage(),
+          '/scorecard': (context) => const ScorecardPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/match_scoring') {
