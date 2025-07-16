@@ -539,9 +539,9 @@ void main() {
 
         // Verify number of recorded rounds
         int expectedRounds;
-        if (user.email == testUsers[0].email)
+        if (user.email == testUsers[0].email) {
           expectedRounds = 3; // First player played 3 rounds
-        else if (user.email == testUsers[1].email)
+        } else if (user.email == testUsers[1].email)
           expectedRounds = 4; // Second player played 4 rounds
         else
           expectedRounds = 4; // Third player played 4 rounds

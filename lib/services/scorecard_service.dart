@@ -229,9 +229,7 @@ class ScorecardService extends ChangeNotifier {
 
         // Get player's handicap index
         double? handicapIndex = playerCard.handicapIndex;
-        if (handicapIndex == null) {
-          handicapIndex = await _getPlayerHandicapIndex(playerId);
-        }
+        handicapIndex ??= await _getPlayerHandicapIndex(playerId);
 
         // Calculate course handicap if we have handicap index and slope rating
         int? courseHandicap;

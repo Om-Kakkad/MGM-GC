@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mgm_gc/models/tee_time_model.dart';
 import 'package:mgm_gc/models/booking_model.dart';
-import 'package:mgm_gc/models/user_model.dart';
 import 'package:intl/intl.dart';
 
 class TeeTimeService extends ChangeNotifier {

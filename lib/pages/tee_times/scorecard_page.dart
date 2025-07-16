@@ -59,7 +59,7 @@ class _ScorecardPageState extends State<ScorecardPage> {
   ]; // Default indexes
 
   // Controllers for hole scores
-  Map<String, Map<int, TextEditingController>> _controllers = {};
+  final Map<String, Map<int, TextEditingController>> _controllers = {};
   bool _isSaving = false;
 
   @override
@@ -536,7 +536,7 @@ class _ScorecardPageState extends State<ScorecardPage> {
                   }),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
       ],
@@ -725,7 +725,7 @@ class _ScorecardPageState extends State<ScorecardPage> {
                   ),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
         if (_scorecard!.isCompleted) ...[
@@ -844,7 +844,7 @@ class _ScorecardPageState extends State<ScorecardPage> {
                   ),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
         const SizedBox(height: 8.0),
