@@ -44,7 +44,7 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
     return Scaffold(
       appBar: AppBar(title: const Text('League Features')),
       body: DefaultTabController(
-        length: 2, // Only 2 tabs for regular users
+        length: 3, // Updated to include Stats tab
         child: Column(
           children: [
             TabBar(
@@ -52,11 +52,16 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
               tabs: const [
                 Tab(icon: Icon(Icons.scoreboard), text: 'Live Scores'),
                 Tab(icon: Icon(Icons.business), text: 'Sponsors'),
+                Tab(icon: Icon(Icons.emoji_events), text: 'Stats'),
               ],
             ),
             Expanded(
               child: TabBarView(
-                children: [_buildLiveScoresTab(), _buildSponsorsTab()],
+                children: [
+                  _buildLiveScoresTab(),
+                  _buildSponsorsTab(),
+                  _buildStatsTab(),
+                ],
               ),
             ),
           ],
@@ -132,6 +137,44 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
             ),
             onPressed: () {
               Navigator.pushNamed(context, '/sponsors');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Stats Tab
+  Widget _buildStatsTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
+          const SizedBox(height: 16),
+          const Text(
+            'Awards & Statistics',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'View player awards, achievements and fun statistics',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.visibility),
+            label: const Text('View Stats & Awards'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff0D6EFD),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(context, '/stats');
             },
           ),
         ],

@@ -15,6 +15,7 @@ import 'package:mgm_gc/pages/admin/event_management.dart';
 import 'package:mgm_gc/pages/admin/event_creation_form.dart';
 import 'package:mgm_gc/pages/league/league_features.dart';
 import 'package:mgm_gc/pages/league/user_league_features.dart';
+import 'package:mgm_gc/pages/league/stats_page.dart';
 import 'package:mgm_gc/pages/events/events_list.dart';
 import 'package:mgm_gc/pages/events/event_details.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -97,11 +98,12 @@ class MyApp extends StatelessWidget {
           '/live-score-detail': (context) => const LiveScoreDetailPage(),
           '/sponsors': (context) => const SponsorsPage(),
           '/aggregate-scores': (context) => const AggregateScoresPage(),
+          '/stats': (context) => const StatsPage(),
           '/scorecard': (context) => const ScorecardPage(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/match_scoring') {
-            final args = settings.arguments as Map<String, String>;
+            // Arguments are passed through settings to MatchScoringPage
             return MaterialPageRoute(
               builder: (context) => MatchScoringPage(),
               settings: settings,
