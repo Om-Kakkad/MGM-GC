@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 
@@ -42,27 +43,226 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('League Features')),
-      body: DefaultTabController(
-        length: 3, // Updated to include Stats tab
+      appBar: AppBar(
+        title: Text(
+          'League Features',
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TabBar(
-              labelColor: Theme.of(context).primaryColor,
-              tabs: const [
-                Tab(icon: Icon(Icons.scoreboard), text: 'Live Scores'),
-                Tab(icon: Icon(Icons.business), text: 'Sponsors'),
-                Tab(icon: Icon(Icons.emoji_events), text: 'Stats'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
+            // Header Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xff0D6EFD),
+                    const Color(0xff0D6EFD).withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildLiveScoresTab(),
-                  _buildSponsorsTab(),
-                  _buildStatsTab(),
+                  const Icon(Icons.sports_golf, color: Colors.white, size: 40),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Join the League!',
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Explore league features and join a team to compete',
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ],
               ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Available Features
+            Text(
+              'Available Features',
+              style: GoogleFonts.raleway(
+                textStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
+              children: [
+                _buildFeatureCard(
+                  'Live Scores',
+                  'View ongoing match scores in real-time',
+                  Icons.scoreboard,
+                  Colors.green,
+                  () => Navigator.pushNamed(context, '/live-scores'),
+                ),
+                _buildFeatureCard(
+                  'Sponsors',
+                  'Check out our amazing sponsors',
+                  Icons.business,
+                  Colors.blue,
+                  () => Navigator.pushNamed(context, '/sponsors'),
+                ),
+                _buildFeatureCard(
+                  'Statistics',
+                  'View league statistics and awards',
+                  Icons.emoji_events,
+                  Colors.amber,
+                  () => Navigator.pushNamed(context, '/stats'),
+                ),
+                _buildFeatureCard(
+                  'Teams',
+                  'Browse all league teams',
+                  Icons.group,
+                  Colors.purple,
+                  () => Navigator.pushNamed(context, '/teams'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+
+            // Join League Section
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [Colors.orange.shade400, Colors.orange.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.group_add, color: Colors.white, size: 32),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Ready to Compete?',
+                      style: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Join a team and start competing in league matches. Access exclusive features and track your progress.',
+                      style: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            () => Navigator.pushNamed(context, '/join-team'),
+                        icon: const Icon(Icons.login, color: Colors.orange),
+                        label: const Text(
+                          'Join a Team',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Information Cards
+            Text(
+              'League Information',
+              style: GoogleFonts.raleway(
+                textStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _buildInfoCard(
+              'How to Join',
+              'Contact a team captain or create your own team to start competing in league matches.',
+              Icons.help_outline,
+              Colors.blue,
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              'Benefits',
+              'Get access to match scoring, leaderboards, team management, and exclusive league events.',
+              Icons.star_outline,
+              Colors.green,
+            ),
+            const SizedBox(height: 12),
+
+            _buildInfoCard(
+              'Tournaments',
+              'Participate in regular tournaments and compete for prizes and recognition.',
+              Icons.emoji_events,
+              Colors.amber,
             ),
           ],
         ),
@@ -70,114 +270,120 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
     );
   }
 
-  // Live Scores Tab
-  Widget _buildLiveScoresTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.scoreboard, size: 64, color: Colors.blue),
-          const SizedBox(height: 16),
-          const Text(
-            'View Live Match Scores',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Check ongoing match scores in real-time',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.visibility),
-            label: const Text('View Live Scores'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff0D6EFD),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+  Widget _buildFeatureCard(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/live-scores');
-            },
+              const SizedBox(height: 8),
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.raleway(
+                    textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Flexible(
+                child: Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.raleway(
+                    textStyle: const TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // Sponsors Tab
-  Widget _buildSponsorsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.business, size: 64, color: Colors.blue),
-          const SizedBox(height: 16),
-          const Text(
-            'View Our Sponsors',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Check out the sponsors supporting our events',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.visibility),
-            label: const Text('View Sponsors'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff0D6EFD),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+  Widget _buildInfoCard(
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/sponsors');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Stats Tab
-  Widget _buildStatsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.emoji_events, size: 64, color: Colors.amber),
-          const SizedBox(height: 16),
-          const Text(
-            'Awards & Statistics',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'View player awards, achievements and fun statistics',
-            style: TextStyle(color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.visibility),
-            label: const Text('View Stats & Awards'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff0D6EFD),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () {
-              Navigator.pushNamed(context, '/stats');
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

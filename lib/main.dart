@@ -6,6 +6,8 @@ import 'package:mgm_gc/pages/login/login.dart';
 import 'package:mgm_gc/pages/splash/sponsor_splash.dart';
 import 'package:mgm_gc/pages/signup/signup.dart';
 import 'package:mgm_gc/pages/home/home_page.dart';
+import 'package:mgm_gc/pages/profile/profile_page.dart';
+import 'package:mgm_gc/pages/teams/teams_page.dart';
 import 'package:mgm_gc/pages/admin/admin_panel.dart';
 import 'package:mgm_gc/pages/admin/match_creation.dart';
 import 'package:mgm_gc/pages/admin/team_creation.dart';
@@ -79,8 +81,10 @@ class MyApp extends StatelessWidget {
           '/login': (context) => Login(),
           '/signup': (context) => Signup(),
           '/home': (context) => HomePage(),
+          '/profile': (context) => const ProfilePage(),
+          '/teams': (context) => const TeamsPage(),
           '/admin': (context) => AdminPanel(),
-          '/league': (context) => LeagueFeatures(),
+          '/league': (context) => const LeagueFeaturesPage(),
           '/user-league': (context) => const UserLeagueFeatures(),
           '/events': (context) => const EventsListPage(),
           '/event-details': (context) => const EventDetailsPage(),
