@@ -294,7 +294,7 @@ class _MatchesPageState extends State<MatchesPage> {
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
                       ],
                     );
                   },

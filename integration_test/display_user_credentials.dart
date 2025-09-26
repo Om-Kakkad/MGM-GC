@@ -4,10 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mgm_gc/firebase_options.dart';
-import 'package:mgm_gc/models/team.dart';
-import 'package:mgm_gc/services/team_service.dart';
-import 'package:mgm_gc/services/match_service.dart';
-import 'package:mgm_gc/models/match_model.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
