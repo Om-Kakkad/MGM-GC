@@ -423,4 +423,27 @@ class AuthService {
     final parts = user.displayName!.split(' ');
     return parts.length > 1 ? parts.skip(1).join(' ') : null;
   }
+
+  // Update user profile information
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+    try {
+      // Update Firestore document
+      await _firestore.collection('users').doc(uid).update({
+        'firstName': data['firstName'],
+        'lastName': data['lastName'],
+        'phoneNumber': data['phoneNumber'],
+        'golfDetails': data['golfDetails'],
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update Firebase Auth display name if first and last name are provided
+      if (data['firstName'] != null && data['lastName'] != null) {
+        final displayName = '${data['firstName']} ${data['lastName']}';
+        await _auth.currentUser?.updateDisplayName(displayName);
+      }
+    } catch (e) {
+      print('Error updating user profile: $e');
+      rethrow;
+    }
+  }
 }

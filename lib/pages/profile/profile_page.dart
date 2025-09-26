@@ -215,12 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Implement edit profile functionality
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Edit profile feature coming soon!'),
-                          ),
-                        );
+                        Navigator.pushNamed(context, '/edit-profile');
                       },
                       icon: const Icon(Icons.edit),
                       label: const Text('Edit Profile'),

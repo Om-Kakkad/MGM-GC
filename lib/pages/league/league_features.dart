@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import '../../services/event_service.dart';
 import '../../models/user_model.dart';
 
 class LeagueFeaturesPage extends StatefulWidget {
@@ -547,15 +548,50 @@ class _LeagueFeaturesPageState extends State<LeagueFeaturesPage> {
                           'Date: ${eventDate.day}/${eventDate.month}/${eventDate.year}',
                         ),
                         trailing: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Event registration feature coming soon!',
-                                ),
-                              ),
-                            );
+                          onPressed: () async {
+                            try {
+                              final eventId = events[index].id;
+                              final eventName =
+                                  eventData['eventName'] ?? 'Event';
+                              final EventService eventService = EventService();
+                              final bool isRegistered = await eventService
+                                  .isUserRegistered(eventId);
+
+                              if (isRegistered) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'You are already registered for this event.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+
+                              await eventService.registerForEvent(eventId);
+
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Successfully registered for $eventName!',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           },
                           child: const Text('Register'),
                         ),
@@ -884,12 +920,7 @@ class _LeagueFeaturesPageState extends State<LeagueFeaturesPage> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Match scoring feature coming soon!'),
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/matches');
                     },
                     child: const Text('View Matches'),
                   ),

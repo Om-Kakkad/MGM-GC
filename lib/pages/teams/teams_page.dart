@@ -410,7 +410,7 @@ class _TeamsPageState extends State<TeamsPage> {
                                 ],
                               ),
                             );
-                          }).toList(),
+                          }),
                           if (team.players.length > 3)
                             Padding(
                               padding: const EdgeInsets.only(top: 4),

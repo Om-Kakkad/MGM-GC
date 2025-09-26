@@ -33,6 +33,8 @@ import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 import 'package:mgm_gc/pages/sponsor/sponsors_page.dart';
 import 'package:mgm_gc/pages/league/aggregate_scores.dart';
 import 'package:mgm_gc/pages/tee_times/scorecard_page.dart';
+import 'package:mgm_gc/pages/league/matches_page.dart';
+import 'package:mgm_gc/pages/profile/edit_profile_page.dart';
 import 'package:provider/provider.dart';
 import 'package:mgm_gc/services/tee_time_service.dart';
 import 'package:mgm_gc/services/scorecard_service.dart';
@@ -104,12 +106,14 @@ class MyApp extends StatelessWidget {
           '/aggregate-scores': (context) => const AggregateScoresPage(),
           '/stats': (context) => const StatsPage(),
           '/scorecard': (context) => const ScorecardPage(),
+          '/matches': (context) => const MatchesPage(),
+          '/edit-profile': (context) => const EditProfilePage(),
         },
         onGenerateRoute: (settings) {
-          if (settings.name == '/match_scoring') {
+          if (settings.name == '/match-scoring') {
             // Arguments are passed through settings to MatchScoringPage
             return MaterialPageRoute(
-              builder: (context) => MatchScoringPage(),
+              builder: (context) => const MatchScoringPage(),
               settings: settings,
             );
           }

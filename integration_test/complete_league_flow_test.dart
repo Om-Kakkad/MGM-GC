@@ -129,7 +129,7 @@ void main() {
       playersByTeam[team.teamID!] = [];
 
       for (var playerIndex = 0; playerIndex < 10; playerIndex++) {
-        final playerEmail = 'player_${teamIndex}_${playerIndex}@example.com';
+        final playerEmail = 'player_${teamIndex}_$playerIndex@example.com';
         final playerPassword = 'Player@123';
         playerEmails.add(playerEmail);
 
@@ -158,13 +158,13 @@ void main() {
           'uid': playerId,
           'email': playerEmail,
           'role': 'user',
-          'firstName': 'Player${teamIndex}${playerIndex}',
+          'firstName': 'Player$teamIndex$playerIndex',
           'lastName': 'Team${teamIndex + 1}',
           'golfDetails': {
             'handicap': handicap,
             'isMember': playerIndex % 2 == 0, // Half are members
             'membershipId':
-                playerIndex % 2 == 0 ? 'MEM${teamIndex}${playerIndex}' : null,
+                playerIndex % 2 == 0 ? 'MEM$teamIndex$playerIndex' : null,
             'playingInLeague': false, // Will be updated upon approval
           },
           'createdAt': FieldValue.serverTimestamp(),
@@ -244,7 +244,7 @@ void main() {
           'isMember': playerIndex % 2 == 0,
           'membershipId':
               playerIndex % 2 == 0
-                  ? 'MEM${teamId.substring(0, 5)}${playerIndex}'
+                  ? 'MEM${teamId.substring(0, 5)}$playerIndex'
                   : null,
         },
       });
