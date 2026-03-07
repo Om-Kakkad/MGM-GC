@@ -215,7 +215,9 @@ class _BookingsList extends StatelessWidget {
                               );
                             },
                             icon: const Icon(Icons.sports_golf, size: 16),
-                            label: const Text('Scorecard'),
+                            label: Text(
+                              isPast ? 'View Scorecard' : 'Start Scorecard',
+                            ),
                             style: ElevatedButton.styleFrom(
                               foregroundColor: Colors.white,
                               backgroundColor: Theme.of(context).primaryColor,

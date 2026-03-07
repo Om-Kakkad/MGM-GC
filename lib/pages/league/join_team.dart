@@ -156,6 +156,42 @@ class _JoinTeamPageState extends State<JoinTeamPage> {
         return;
       }
 
+      final List<dynamic> existingPlayers = teamData['players'] ?? [];
+      if (existingPlayers.contains(user.uid)) {
+        Fluttertoast.showToast(
+          msg: "You are already in this team",
+          toastLength: Toast.LENGTH_LONG,
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final duplicateRequestSnapshot =
+          await _firestore
+              .collection('team_requests')
+              .where('userId', isEqualTo: user.uid)
+              .get();
+
+      final hasDuplicate = duplicateRequestSnapshot.docs.any((doc) {
+        final data = doc.data();
+        return data['teamId'] == _selectedTeamId &&
+            data['eventId'] == _selectedEventId &&
+            (data['status'] == 'pending' || data['status'] == 'approved');
+      });
+
+      if (hasDuplicate) {
+        Fluttertoast.showToast(
+          msg: "You already requested to join this team",
+          toastLength: Toast.LENGTH_LONG,
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data();
 
@@ -164,7 +200,8 @@ class _JoinTeamPageState extends State<JoinTeamPage> {
         'userId': user.uid,
         'userEmail': user.email,
         'userName':
-            '${userData?['firstName'] ?? ''} ${userData?['lastName'] ?? ''}'.trim(),
+            '${userData?['firstName'] ?? ''} ${userData?['lastName'] ?? ''}'
+                .trim(),
         'teamId': _selectedTeamId,
         'eventId': _selectedEventId,
         'teamName': teamData['teamName'] ?? 'Unnamed Team',

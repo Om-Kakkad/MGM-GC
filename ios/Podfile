@@ -1,8 +1,12 @@
 # Specify the platform version for iOS
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+# Temporary offline pin: uses locally cached Firebase iOS SDK to avoid
+# GitHub clone failures in restricted networks.
+$FirebaseSDKVersion = '11.15.0'
 
 project 'Runner', {
   'Debug' => :debug,
@@ -35,12 +39,23 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  host_arch = `uname -m`.strip
+
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     
-    # Add the following to avoid deployment target warnings
+    # Keep all pods aligned with the app's deployment target.
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+
+      # Faster simulator debug builds on Apple Silicon.
+      if host_arch == 'arm64'
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386 x86_64'
+      end
+
+      if config.name == 'Debug'
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+      end
     end
   end
 end

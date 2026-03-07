@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -754,6 +755,31 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/admin');
+              },
+            ),
+          if (kDebugMode)
+            ListTile(
+              title: const Text('Debug: Open Admin Route'),
+              leading: const Icon(Icons.developer_mode),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/admin');
+              },
+            ),
+          if (kDebugMode)
+            ListTile(
+              title: const Text('Debug: Open Match 1 Scoring'),
+              leading: const Icon(Icons.route),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  '/match-scoring',
+                  arguments: {
+                    'eventId': 'mgm-league-2025',
+                    'matchId': 'match-1',
+                  },
+                );
               },
             ),
           const Divider(),

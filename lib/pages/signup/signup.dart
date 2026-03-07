@@ -7,8 +7,11 @@ import 'package:google_fonts/google_fonts.dart';
 class Signup extends StatelessWidget {
   Signup({super.key});
 
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   @override
   Widget build(BuildContext context) {
@@ -24,27 +27,30 @@ class Signup extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            children: [
-              Center(
-                child: Text(
-                  'Register Account',
-                  style: GoogleFonts.raleway(
-                    textStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                Center(
+                  child: Text(
+                    'Register Account',
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 80),
-              _emailAddress(),
-              const SizedBox(height: 20),
-              _password(),
-              const SizedBox(height: 50),
-              _signup(context),
-            ],
+                const SizedBox(height: 80),
+                _emailAddress(),
+                const SizedBox(height: 20),
+                _password(),
+                const SizedBox(height: 50),
+                _signup(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -67,8 +73,20 @@ class Signup extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        TextField(
+        TextFormField(
           controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) {
+            final email = value?.trim() ?? '';
+            if (email.isEmpty) {
+              return 'Please enter your email';
+            }
+            if (!_emailRegex.hasMatch(email)) {
+              return 'Please enter a valid email';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             filled: true,
             hintText: 'omkakkad2007@gmail.com',
@@ -104,9 +122,20 @@ class Signup extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        TextField(
+        TextFormField(
           controller: _passwordController,
           obscureText: true,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) {
+            final password = value ?? '';
+            if (password.isEmpty) {
+              return 'Please enter your password';
+            }
+            if (password.length < 8) {
+              return 'Password must be at least 8 characters';
+            }
+            return null;
+          },
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xffF7F7F9),
@@ -129,8 +158,12 @@ class Signup extends StatelessWidget {
         elevation: 0,
       ),
       onPressed: () async {
+        if (!(_formKey.currentState?.validate() ?? false)) {
+          return;
+        }
+
         await AuthService().signup(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
           context: context,
         );
