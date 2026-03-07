@@ -31,6 +31,43 @@ class UserModel {
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
+    final rawGolfDetails = data['golfDetails'];
+    final Map<String, dynamic> golfDetailsMap =
+        rawGolfDetails is Map<String, dynamic>
+            ? Map<String, dynamic>.from(rawGolfDetails)
+            : rawGolfDetails is Map
+            ? Map<String, dynamic>.from(rawGolfDetails)
+            : <String, dynamic>{};
+
+    // Backward compatibility for older user documents that stored these
+    // values at the root level instead of under golfDetails.
+    if (!golfDetailsMap.containsKey('handicap') && data['handicap'] != null) {
+      golfDetailsMap['handicap'] = data['handicap'];
+    }
+    if (!golfDetailsMap.containsKey('isMember') && data['isMember'] != null) {
+      golfDetailsMap['isMember'] = data['isMember'];
+    }
+    if (!golfDetailsMap.containsKey('membershipId') &&
+        data['membershipId'] != null) {
+      golfDetailsMap['membershipId'] = data['membershipId'];
+    }
+    if (!golfDetailsMap.containsKey('playingInLeague') &&
+        data['playingInLeague'] != null) {
+      golfDetailsMap['playingInLeague'] = data['playingInLeague'];
+    }
+    if (!golfDetailsMap.containsKey('teamId') && data['teamId'] != null) {
+      golfDetailsMap['teamId'] = data['teamId'];
+    }
+    if (!golfDetailsMap.containsKey('teamName') && data['teamName'] != null) {
+      golfDetailsMap['teamName'] = data['teamName'];
+    }
+    if (!golfDetailsMap.containsKey('eventId') && data['eventId'] != null) {
+      golfDetailsMap['eventId'] = data['eventId'];
+    }
+    if (!golfDetailsMap.containsKey('bracket') && data['bracket'] != null) {
+      golfDetailsMap['bracket'] = data['bracket'];
+    }
+
     return UserModel(
       uid: data['uid'] ?? '',
       email: data['email'] ?? '',
@@ -46,8 +83,8 @@ class UserModel {
       gender: data['gender'],
       phoneNumber: data['phoneNumber'],
       golfDetails:
-          data['golfDetails'] != null
-              ? GolfDetails.fromMap(data['golfDetails'])
+          golfDetailsMap.isNotEmpty
+              ? GolfDetails.fromMap(golfDetailsMap)
               : const GolfDetails(isMember: false, playingInLeague: false),
       createdAt:
           data['createdAt'] != null
@@ -117,15 +154,35 @@ class GolfDetails {
 
   factory GolfDetails.fromMap(Map<String, dynamic> map) {
     return GolfDetails(
-      handicap: map['handicap'],
-      isMember: map['isMember'] ?? false,
-      membershipId: map['membershipId'],
-      playingInLeague: map['playingInLeague'] ?? false,
-      teamId: map['teamId'],
-      teamName: map['teamName'],
-      eventId: map['eventId'],
-      bracket: map['bracket'],
+      handicap: _toDouble(map['handicap']),
+      isMember: _toBool(map['isMember']),
+      membershipId: _toNullableString(map['membershipId']),
+      playingInLeague: _toBool(map['playingInLeague']),
+      teamId: _toNullableString(map['teamId']),
+      teamName: _toNullableString(map['teamName']),
+      eventId: _toNullableString(map['eventId']),
+      bracket: _toNullableString(map['bracket']),
     );
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  static bool _toBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
+  }
+
+  static String? _toNullableString(dynamic value) {
+    if (value == null) return null;
+    final str = value.toString().trim();
+    return str.isEmpty ? null : str;
   }
 }
 

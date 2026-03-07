@@ -323,12 +323,14 @@ class _HomePageState extends State<HomePage> {
                   children: [
                     const Icon(Icons.announcement, color: Color(0xff0D6EFD)),
                     const SizedBox(width: 8),
-                    Text(
-                      'Welcome to MGM Golf Club!',
-                      style: GoogleFonts.raleway(
-                        textStyle: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                    Expanded(
+                      child: Text(
+                        'Welcome to MGM Golf Club!',
+                        style: GoogleFonts.raleway(
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
