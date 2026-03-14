@@ -123,7 +123,7 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.0,
               children: [
                 _buildFeatureCard(
                   'Live Scores',
@@ -283,52 +283,69 @@ class _UserLeagueFeaturesState extends State<UserLeagueFeatures> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compactTile =
+                !constraints.hasBoundedHeight ||
+                !constraints.hasBoundedWidth ||
+                constraints.maxHeight <= 110 ||
+                constraints.maxWidth <= 110;
+            final iconSize = compactTile ? 18.0 : 24.0;
+            final iconPadding = compactTile ? 8.0 : 12.0;
+            final tilePadding = compactTile ? 8.0 : 12.0;
+            final cardContent = Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(iconPadding),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: iconSize),
                 ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: Text(
+                SizedBox(height: compactTile ? 6 : 8),
+                Text(
                   title,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.raleway(
-                    textStyle: const TextStyle(
+                    textStyle: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: compactTile ? 13 : 14,
+                      height: 1.2,
                     ),
                   ),
-                  maxLines: 1,
+                  maxLines: compactTile ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(height: 4),
-              Flexible(
-                child: Text(
-                  description,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.raleway(
-                    textStyle: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
+                if (!compactTile) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.raleway(
+                      textStyle: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
+                        height: 1.2,
+                      ),
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
+                ],
+              ],
+            );
+
+            return Padding(
+              padding: EdgeInsets.all(tilePadding),
+              child:
+                  compactTile
+                      ? FittedBox(fit: BoxFit.scaleDown, child: cardContent)
+                      : cardContent,
+            );
+          },
         ),
       ),
     );

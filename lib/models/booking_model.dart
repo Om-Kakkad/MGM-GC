@@ -5,7 +5,8 @@ class BookingModel {
   final String teeTimeId;
   final String dateId;
   final String userId;
-  final String? bookerName;  // Add this field to store the name of the user who made the booking
+  final String?
+  bookerName; // Add this field to store the name of the user who made the booking
   final DateTime bookingDate;
   final DateTime startTime;
   final DateTime endTime;
@@ -33,26 +34,31 @@ class BookingModel {
 
   factory BookingModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    
+
     // Convert players data to PlayerInfo objects
     List<PlayerInfo> playersList = [];
     if (data['players'] != null) {
       if (data['players'] is List) {
         // Handle legacy format (just strings)
-        playersList = List<String>.from(data['players'])
-            .map((name) => PlayerInfo(name: name, isRegistered: false))
-            .toList();
+        playersList =
+            List<String>.from(data['players'])
+                .map((name) => PlayerInfo(name: name, isRegistered: false))
+                .toList();
       } else if (data['players'] is Map) {
         // Handle new format (map of player objects)
-        Map<String, dynamic> playersMap = Map<String, dynamic>.from(data['players']);
+        Map<String, dynamic> playersMap = Map<String, dynamic>.from(
+          data['players'],
+        );
         playersMap.forEach((key, value) {
           if (value is Map) {
-            playersList.add(PlayerInfo.fromMap(Map<String, dynamic>.from(value)));
+            playersList.add(
+              PlayerInfo.fromMap(Map<String, dynamic>.from(value)),
+            );
           }
         });
       }
     }
-    
+
     return BookingModel(
       id: doc.id,
       teeTimeId: data['teeTimeId'],
@@ -64,7 +70,7 @@ class BookingModel {
       endTime: (data['endTime'] as Timestamp).toDate(),
       players: playersList,
       isPaid: data['isPaid'] ?? false,
-      amountPaid: data['amountPaid'],
+      amountPaid: (data['amountPaid'] as num?)?.toDouble(),
       isSharedBooking: data['isSharedBooking'] ?? false,
       primaryBookingId: data['primaryBookingId'],
     );
@@ -76,7 +82,7 @@ class BookingModel {
     for (int i = 0; i < players.length; i++) {
       playersMap['player_$i'] = players[i].toMap();
     }
-    
+
     return {
       'teeTimeId': teeTimeId,
       'dateId': dateId,

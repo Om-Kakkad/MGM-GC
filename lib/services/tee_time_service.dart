@@ -163,8 +163,12 @@ class TeeTimeService extends ChangeNotifier {
 
         TeeTimeModel slot = TeeTimeModel.fromFirestore(slotSnapshot);
 
-        // Check if slot is available
-        if (slot.status != TeeTimeStatus.open) {
+        final isOpen = slot.status == TeeTimeStatus.open;
+        final isHeldByCurrentUser =
+            slot.status == TeeTimeStatus.held && slot.bookedByUid == userId;
+
+        // Slot can be booked if open, or if this user currently holds it.
+        if (!isOpen && !isHeldByCurrentUser) {
           throw Exception('Slot is not available');
         }
 
@@ -176,6 +180,7 @@ class TeeTimeService extends ChangeNotifier {
           'status': TeeTimeStatus.booked.toString().split('.').last,
           'bookedByUid': userId,
           'players': playerNames,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
         // Create primary booking record
@@ -292,6 +297,7 @@ class TeeTimeService extends ChangeNotifier {
         transaction.update(slotRef, {
           'status': TeeTimeStatus.held.toString().split('.').last,
           'bookedByUid': userId,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       });
 
