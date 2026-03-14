@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,11 +10,34 @@ import 'package:intl/intl.dart';
 class TeeTimeService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final StreamSubscription<User?> _authStateSub;
 
   // Cache for the current user's member status
   bool? _isMember;
   // Cache for admin status
   bool? _isAdmin;
+  String? _cachedUserId;
+
+  TeeTimeService() {
+    _authStateSub = _auth.authStateChanges().listen((user) {
+      if (_cachedUserId != user?.uid) {
+        _clearUserCache();
+      }
+    });
+  }
+
+  void _clearUserCache() {
+    _isMember = null;
+    _isAdmin = null;
+    _cachedUserId = _auth.currentUser?.uid;
+  }
+
+  void _ensureCacheForCurrentUser(String userId) {
+    if (_cachedUserId != userId) {
+      _clearUserCache();
+      _cachedUserId = userId;
+    }
+  }
 
   // Get tee times for a specific date
   Stream<List<TeeTimeModel>> getTeeTimes(String dateId) {
@@ -48,10 +73,14 @@ class TeeTimeService extends ChangeNotifier {
 
   // Check if user is a member
   Future<bool> isUserMember() async {
-    if (_isMember != null) return _isMember!;
-
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return false;
+    if (userId == null) {
+      _clearUserCache();
+      return false;
+    }
+
+    _ensureCacheForCurrentUser(userId);
+    if (_isMember != null) return _isMember!;
 
     final userDoc = await _firestore.collection('users').doc(userId).get();
     if (!userDoc.exists) return false;
@@ -75,10 +104,14 @@ class TeeTimeService extends ChangeNotifier {
 
   // Check if user is an admin
   Future<bool> isUserAdmin() async {
-    if (_isAdmin != null) return _isAdmin!;
-
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return false;
+    if (userId == null) {
+      _clearUserCache();
+      return false;
+    }
+
+    _ensureCacheForCurrentUser(userId);
+    if (_isAdmin != null) return _isAdmin!;
 
     try {
       final userDoc = await _firestore.collection('users').doc(userId).get();
@@ -91,6 +124,12 @@ class TeeTimeService extends ChangeNotifier {
       print('Error checking admin status: $e');
       return false;
     }
+  }
+
+  @override
+  void dispose() {
+    _authStateSub.cancel();
+    super.dispose();
   }
 
   // Book a tee time with transaction to ensure atomicity
@@ -124,8 +163,12 @@ class TeeTimeService extends ChangeNotifier {
 
         TeeTimeModel slot = TeeTimeModel.fromFirestore(slotSnapshot);
 
-        // Check if slot is available
-        if (slot.status != TeeTimeStatus.open) {
+        final isOpen = slot.status == TeeTimeStatus.open;
+        final isHeldByCurrentUser =
+            slot.status == TeeTimeStatus.held && slot.bookedByUid == userId;
+
+        // Slot can be booked if open, or if this user currently holds it.
+        if (!isOpen && !isHeldByCurrentUser) {
           throw Exception('Slot is not available');
         }
 
@@ -137,6 +180,7 @@ class TeeTimeService extends ChangeNotifier {
           'status': TeeTimeStatus.booked.toString().split('.').last,
           'bookedByUid': userId,
           'players': playerNames,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
 
         // Create primary booking record
@@ -253,6 +297,7 @@ class TeeTimeService extends ChangeNotifier {
         transaction.update(slotRef, {
           'status': TeeTimeStatus.held.toString().split('.').last,
           'bookedByUid': userId,
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       });
 

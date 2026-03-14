@@ -65,9 +65,9 @@ class _MatchScoringPageState extends State<MatchScoringPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args =
-        ModalRoute.of(context)!.settings.arguments as Map<String, String>;
-    eventId = args['eventId']!;
-    matchId = args['matchId']!;
+        ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+    eventId = args['eventId'] as String;
+    matchId = args['matchId'] as String;
     _loadData();
   }
 

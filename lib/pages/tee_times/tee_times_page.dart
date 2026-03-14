@@ -561,8 +561,10 @@ class TeeTimeCard extends StatelessWidget {
                     // Dialog actions
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           TextButton(
                             onPressed: () {
@@ -570,7 +572,6 @@ class TeeTimeCard extends StatelessWidget {
                             },
                             child: const Text('Cancel'),
                           ),
-                          const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: () async {
                               if (selectedPlayers.isEmpty) {

@@ -58,8 +58,8 @@ class ScorecardModel {
               : null,
       courseName: data['courseName'],
       coursePar: data['coursePar'] ?? 69,
-      courseRating: data['courseRating'],
-      slopeRating: data['slopeRating'],
+      courseRating: (data['courseRating'] as num?)?.toDouble(),
+      slopeRating: (data['slopeRating'] as num?)?.toDouble(),
       pcc: data['pcc'],
     );
   }
@@ -122,10 +122,10 @@ class PlayerScorecard {
       userId: map['userId'] ?? '',
       playerName: map['playerName'] ?? '',
       holeScores: scores,
-      handicapIndex: map['handicapIndex'],
+      handicapIndex: (map['handicapIndex'] as num?)?.toDouble(),
       courseHandicap: map['courseHandicap'],
       adjustedGrossScore: map['adjustedGrossScore'],
-      scoreDifferential: map['scoreDifferential'],
+      scoreDifferential: (map['scoreDifferential'] as num?)?.toDouble(),
     );
   }
 
@@ -143,7 +143,7 @@ class PlayerScorecard {
 
   // Calculate total gross score
   int get totalScore {
-    return holeScores.values.fold(0, (sum, score) => sum + score);
+    return holeScores.values.fold(0, (total, score) => total + score);
   }
 
   // Check if this is a 9-hole round
@@ -203,7 +203,7 @@ class HandicapRecord {
       id: doc.id,
       userId: data['userId'] ?? '',
       scoreDifferentials: differentials,
-      handicapIndex: data['handicapIndex'],
+      handicapIndex: (data['handicapIndex'] as num?)?.toDouble(),
       lastUpdated: (data['lastUpdated'] as Timestamp).toDate(),
     );
   }
@@ -235,7 +235,7 @@ class ScoreDifferential {
     return ScoreDifferential(
       scorecardId: map['scorecardId'] ?? '',
       playDate: (map['playDate'] as Timestamp).toDate(),
-      value: map['value'] ?? 0.0,
+      value: (map['value'] as num?)?.toDouble() ?? 0.0,
       courseName: map['courseName'] ?? 'Unknown Course',
     );
   }
@@ -276,8 +276,8 @@ class CourseData {
       id: doc.id,
       name: data['name'] ?? '',
       par: data['par'] ?? 72,
-      courseRating: data['courseRating'] ?? 72.0,
-      slopeRating: data['slopeRating'] ?? 113.0,
+      courseRating: (data['courseRating'] as num?)?.toDouble() ?? 72.0,
+      slopeRating: (data['slopeRating'] as num?)?.toDouble() ?? 113.0,
       holePars: List<int>.from(data['holePars'] ?? List.filled(18, 4)),
       holeIndexes: List<int>.from(
         data['holeIndexes'] ?? List.generate(18, (i) => i + 1),

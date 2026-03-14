@@ -6,6 +6,8 @@ import 'package:mgm_gc/pages/login/login.dart';
 import 'package:mgm_gc/pages/splash/sponsor_splash.dart';
 import 'package:mgm_gc/pages/signup/signup.dart';
 import 'package:mgm_gc/pages/home/home_page.dart';
+import 'package:mgm_gc/pages/profile/profile_page.dart';
+import 'package:mgm_gc/pages/teams/teams_page.dart';
 import 'package:mgm_gc/pages/admin/admin_panel.dart';
 import 'package:mgm_gc/pages/admin/match_creation.dart';
 import 'package:mgm_gc/pages/admin/team_creation.dart';
@@ -31,6 +33,8 @@ import 'package:mgm_gc/pages/admin/team_requests_page.dart';
 import 'package:mgm_gc/pages/sponsor/sponsors_page.dart';
 import 'package:mgm_gc/pages/league/aggregate_scores.dart';
 import 'package:mgm_gc/pages/tee_times/scorecard_page.dart';
+import 'package:mgm_gc/pages/league/matches_page.dart';
+import 'package:mgm_gc/pages/profile/edit_profile_page.dart';
 import 'package:provider/provider.dart';
 import 'package:mgm_gc/services/tee_time_service.dart';
 import 'package:mgm_gc/services/scorecard_service.dart';
@@ -79,8 +83,10 @@ class MyApp extends StatelessWidget {
           '/login': (context) => Login(),
           '/signup': (context) => Signup(),
           '/home': (context) => HomePage(),
+          '/profile': (context) => const ProfilePage(),
+          '/teams': (context) => const TeamsPage(),
           '/admin': (context) => AdminPanel(),
-          '/league': (context) => LeagueFeatures(),
+          '/league': (context) => const LeagueFeaturesPage(),
           '/user-league': (context) => const UserLeagueFeatures(),
           '/events': (context) => const EventsListPage(),
           '/event-details': (context) => const EventDetailsPage(),
@@ -100,12 +106,14 @@ class MyApp extends StatelessWidget {
           '/aggregate-scores': (context) => const AggregateScoresPage(),
           '/stats': (context) => const StatsPage(),
           '/scorecard': (context) => const ScorecardPage(),
+          '/matches': (context) => const MatchesPage(),
+          '/edit-profile': (context) => const EditProfilePage(),
         },
         onGenerateRoute: (settings) {
-          if (settings.name == '/match_scoring') {
+          if (settings.name == '/match-scoring') {
             // Arguments are passed through settings to MatchScoringPage
             return MaterialPageRoute(
-              builder: (context) => MatchScoringPage(),
+              builder: (context) => const MatchScoringPage(),
               settings: settings,
             );
           }

@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "manual-test:reset": "node scripts/manual_test_data.js reset",
+    "manual-test:seed": "node scripts/manual_test_data.js seed",
+    "manual-test:seed-bob": "node scripts/manual_test_data.js seed-bob",
+    "manual-test:recalc": "node scripts/manual_test_data.js recalc-handicaps"
+  },
   "dependencies": {
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.2"
